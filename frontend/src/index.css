@@ -10,5 +10,5 @@
 }
 
 body {
-  @apply bg-gravel-950 text-ivory-50;
+  @apply bg-gravel-950 text-ivory-50 font-mono;
 }
