@@ -1,8 +1,10 @@
-import Footer from './components/Footer';
+import Footer from './components/footer';
+import TopNav from './components/topnav';
 
 function App() {
   return (
-    <div>
+    <>
+        <TopNav />  
         <h1 className="text-3xl font-bold underline">Hello world!</h1>
         <p className="text-gray-400">
           Click on the Vite and React logos to learn more
@@ -11,7 +13,7 @@ function App() {
         {/* Your main content goes here */}
       </main>
       <Footer />
-    </div>
+    </>
   );
 }
 
