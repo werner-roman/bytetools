@@ -1,1 +1,13 @@
 @import "tailwindcss";
+
+
+@theme {
+  --color-gravel-950: #212121;
+
+  --color-ivory-50:  #EBEBEB;
+
+}
+
+body {
+  @apply bg-gravel-950 text-ivory-50;
+}
