@@ -1,10 +1,9 @@
-function LoadingSpinnerSVG() {
+function LoadingGitHubSVG() {
   return (
     <svg
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
+      className="w-7 h-auto"
       xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 96 96"
     >
       <path
         fill-rule="evenodd"
@@ -18,12 +17,18 @@ function LoadingSpinnerSVG() {
 
 export default function Footer() {
   return (
-    <footer className="flex items-center gap-2 text-gray-400">
-      <span>
-        <a href="https://github.com/werner-roman/bytetools" target="_blank">GitHub
-        </a>
-        <LoadingSpinnerSVG /> 
-      </span>
+    <footer className="text-sm text-center text-gray-400  gap-2 fixed bottom-5 left-0 right-0 flex justify-center">
+      <a
+        href="https://github.com/werner-roman/bytetools"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-4"
+      >
+        GitHub
+        <span>
+          <LoadingGitHubSVG />{" "}
+        </span>
+      </a>
     </footer>
   );
 }
