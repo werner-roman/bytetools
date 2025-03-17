@@ -38,16 +38,9 @@ function App() {
             </div>
           </div>
         ) : (
-          <div className="max-w-5xl flex-grow flex items-center justify-center">
-            <button
-              onClick={handleBack}
-              className="mb-4 px-4 py-2 text-gray-200 hover:text-white"
-            >
-              ← Back
-            </button>
-            
-              <ToolBox toolName={selectedTool} />
-            </div>
+          <div className="w-full flex-grow flex flex-col items-center px-4">
+            <ToolBox toolName={selectedTool} onBack={handleBack} />
+          </div>
         )}
       </div>
       <Footer />
