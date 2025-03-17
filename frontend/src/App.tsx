@@ -1,19 +1,20 @@
-import Footer from './components/footer';
-import TopNav from './components/topnav';
+import Footer from "./components/Footer";
+import TopNav from "./components/TopNav";
+import ToolCard from "./components/ToolCard";
 
 function App() {
   return (
-    <>
-        <TopNav />  
-        <h1 className="text-3xl font-bold underline">Hello world!</h1>
-        <p className="text-gray-400">
-          Click on the Vite and React logos to learn more
-        </p>
-      <main className="flex-grow p-4">
-        {/* Your main content goes here */}
-      </main>
+    <main>
+      <TopNav />
+      <h1 className="text-2xl font-bold text-center mt-4 text-gray-400">
+        Simple & Open-Source
+      </h1>
+      <div>
+        <ToolCard />
+      </div>
+      <main className="flex-grow p-4">{/* Your main content goes here */}</main>
       <Footer />
-    </>
+    </main>
   );
 }
 

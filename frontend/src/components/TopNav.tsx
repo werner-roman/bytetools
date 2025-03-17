@@ -5,7 +5,7 @@ export default function TopNav() {
     <nav className="flex w-full items-center justify-between p-1 text-2xl font-bold bg-asphalt-950">
       <div>
         <img src={logo} className="w-25 h-auto" alt="Vite logo" />
-        <div>Bytetools</div>
+        <div className="text-gray-400">Bytetools</div>
       </div>
       <div className="flex flex-row items-center gap-4">
         {/* potential signin/signup buttons */}
