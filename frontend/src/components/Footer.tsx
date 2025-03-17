@@ -17,7 +17,7 @@ function LoadingGitHubSVG() {
 
 export default function Footer() {
   return (
-    <footer className="text-sm text-center text-gray-400  gap-2 fixed bottom-5 left-0 right-0 flex justify-center">
+    <footer className="text-sm text-center text-gray-400  gap-2 fixed-bottom left-0 right-0 flex justify-center mb-5">
       <a
         href="https://github.com/werner-roman/bytetools"
         target="_blank"

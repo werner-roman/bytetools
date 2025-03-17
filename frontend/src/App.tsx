@@ -10,13 +10,8 @@ function App() {
         Simple & Open-Source
       </h1>
       <div className="flex-grow flex items-center justify-center w-full">
-        <div className="w-full max-w-md mt-8">
+        <div className="w-full max-w-md mt-8 overflow-y-auto">
           <ToolCard title="KMZ-Reverse" description="Reverse the direction of a KMZ file" />
-          <ToolCard title="KMZ-Merger" description="Merge multiple KMZ files into one" />
-          <ToolCard title="KMZ-Merger" description="Merge multiple KMZ files into one" />
-          <ToolCard title="KMZ-Merger" description="Merge multiple KMZ files into one" />
-          <ToolCard title="KMZ-Merger" description="Merge multiple KMZ files into one" />
-          <ToolCard title="KMZ-Merger" description="Merge multiple KMZ files into one" />
           <ToolCard title="KMZ-Merger" description="Merge multiple KMZ files into one" />
         </div>
       </div>
