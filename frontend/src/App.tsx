@@ -1,9 +1,20 @@
-import Footer from './components/Footer';
-import TopNav from './components/TopNav';
-import ToolCard from './components/ToolCard';
-{/*import ToolBox from './components/ToolBox';*/}
+import { useState } from "react";
+import Footer from "./components/Footer";
+import TopNav from "./components/TopNav";
+import ToolCard from "./components/ToolCard";
+import ToolBox from "./components/ToolBox";
 
 function App() {
+  const [selectedTool, setSelectedTool] = useState<string | null>(null);
+
+  const handleToolSelect = (toolName: string) => {
+    setSelectedTool(toolName);
+  };
+
+  const handleBack = () => {
+    setSelectedTool(null);
+  };
+
   return (
     <main className="min-h-screen flex flex-col items-center">
       <TopNav />
@@ -11,11 +22,33 @@ function App() {
         Simple & Open-Source
       </h1>
       <div className="flex-grow flex items-center justify-center w-full">
-        <div className="w-full max-w-md mt-8 overflow-y-auto">
-          <ToolCard title={"KMZ-Reverse"} description={"Reverse the direction of a KMZ file"} />
-          <ToolCard title={"KMZ-Merger"} description={"Merge multiple KMZ files into one"} />
-          {/*<ToolBox title={"KMZ-Merger"}/>*/}
-        </div>
+        {!selectedTool ? (
+          <div className="w-full max-w-md mt-8 overflow-y-auto">
+            <div onClick={() => handleToolSelect("KMZ-Reverse")}>
+              <ToolCard
+                title="KMZ-Reverse"
+                description="Reverse the direction of a KMZ file"
+              />
+            </div>
+            <div onClick={() => handleToolSelect("KMZ-Merger")}>
+              <ToolCard
+                title="KMZ-Merger"
+                description="Merge multiple KMZ files into one"
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="max-w-5xl flex-grow flex items-center justify-center">
+            <button
+              onClick={handleBack}
+              className="mb-4 px-4 py-2 text-gray-200 hover:text-white"
+            >
+              ← Back
+            </button>
+            
+              <ToolBox toolName={selectedTool} />
+            </div>
+        )}
       </div>
       <Footer />
     </main>
