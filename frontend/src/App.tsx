@@ -1,6 +1,7 @@
 import Footer from './components/Footer';
 import TopNav from './components/TopNav';
 import ToolCard from './components/ToolCard';
+import ToolBox from './components/ToolBox';
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
         <div className="w-full max-w-md mt-8 overflow-y-auto">
           <ToolCard title={"KMZ-Reverse"} description={"Reverse the direction of a KMZ file"} />
           <ToolCard title={"KMZ-Merger"} description={"Merge multiple KMZ files into one"} />
+          {/*<ToolBox title={"KMZ-Merger"}/>*/}
         </div>
       </div>
       <Footer />
