@@ -38,7 +38,7 @@ To get started with the project locally, follow these steps:
    npm run dev
    ```
 
-4. Open your browser and go to `http://localhost:3000` to see the application in action.
+4. Open your browser and go to `http://localhost:5173` to see the application in action.
 
 ## Contributing
 
@@ -50,7 +50,7 @@ We welcome contributions from the community! If you have an idea for a new tool,
 
 ## Feedback
 
-Your feedback is important to us. If you have any suggestions or comments, please feel free to reach out. You can open an issue on GitHub or contact us directly.
+Your feedback is important to us. If you have any suggestions or comments, please feel free to reach out. You can open an issue on GitHub.
 
 ## License
 
