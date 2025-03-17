@@ -1,7 +1,7 @@
 import Footer from './components/Footer';
 import TopNav from './components/TopNav';
 import ToolCard from './components/ToolCard';
-import ToolBox from './components/ToolBox';
+{/*import ToolBox from './components/ToolBox';*/}
 
 function App() {
   return (
