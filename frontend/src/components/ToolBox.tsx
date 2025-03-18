@@ -16,7 +16,8 @@ const ToolBox = ({
     setFiles(prevFiles => [...prevFiles, ...kmzFiles]);
   };
 
-  const removeFile = (fileName: string) => {
+  const removeFile = (fileName: string, event: React.MouseEvent) => {
+    event.stopPropagation();
     setFiles(prevFiles => prevFiles.filter(file => file.name !== fileName));
   };
 
@@ -56,7 +57,7 @@ const ToolBox = ({
                 <li key={index} className="flex justify-between items-center mb-2">
                   {file.name}
                   <button
-                    onClick={() => removeFile(file.name)}
+                    onClick={(event) => removeFile(file.name, event)}
                     className="text-red-500 hover:text-red-700 border-1 border-gray-400 rounded-lg p-2 mb-2"
                   >
                     <Trash2 size={20} />
