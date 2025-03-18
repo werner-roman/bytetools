@@ -29,16 +29,18 @@ const ToolBox = ({
       <div className="border-2 border-gray-400 rounded-lg p-4 mb-8">
         <h1 className="text-xl font-bold mb-2">{toolName}</h1>
         <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-400 rounded-lg p-8 mb-4">
-          <p className="mb-4">Drop or <span className="underline">upload</span> your .kmz files</p>
-          <input
-            type="file"
-            accept=".kmz"
-            multiple
-            onChange={handleFileUpload}
-            className="mb-4"
-          />
+          <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer">
+            <p className="mb-4">Drop or <span className="underline">upload</span> your .kmz files</p>
+            <input
+              type="file"
+              accept=".kmz"
+              multiple
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+          </label>
           {files.length > 0 && (
-            <ul className="text-gray-400">
+            <ul className="text-gray-400 mt-4">
               {files.map((file, index) => (
                 <li key={index}>{file.name}</li>
               ))}
