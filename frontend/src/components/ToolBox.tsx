@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { Trash2 } from "lucide-react";
+import { Toaster, toast } from "sonner";
 
 const ToolBox = ({
   toolName,
@@ -13,12 +14,34 @@ const ToolBox = ({
 
   const onDrop = (acceptedFiles: File[]) => {
     const kmzFiles = acceptedFiles.filter(file => file.name.endsWith(".kmz"));
-    setFiles(prevFiles => [...prevFiles, ...kmzFiles]);
+    const newFiles = kmzFiles.filter(
+      file => !files.some(existingFile => existingFile.name === file.name)
+    );
+
+    if (newFiles.length < kmzFiles.length) {
+      toast.error(
+        <div className="flex justify-between items-center">
+          <span>Some files were already uploaded and were skipped.</span>
+          <button
+            onClick={() => toast.dismiss()}
+            className="ml-4 text-m text-gray-400 hover:underline"
+          >
+            X
+          </button>
+        </div>
+      );
+    }
+
+    setFiles(prevFiles => [...prevFiles, ...newFiles]);
   };
 
   const removeFile = (fileName: string, event: React.MouseEvent) => {
     event.stopPropagation();
     setFiles(prevFiles => prevFiles.filter(file => file.name !== fileName));
+  };
+
+  const clearAllFiles = () => {
+    setFiles([]);
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -29,6 +52,7 @@ const ToolBox = ({
 
   return (
     <div className="w-full max-w-2xl">
+      <Toaster position="bottom-right" theme="dark" />
       <button
         onClick={onBack}
         className="mb-4 text-xl text-gray-400 hover:text-white"
@@ -67,7 +91,16 @@ const ToolBox = ({
             </ul>
           )}
         </div>
-        <div className="flex justify-end">
+        <div className="flex justify-between items-center">
+          {files.length > 0 && (
+            <button
+              onClick={clearAllFiles}
+              className="text-red-500 text-sm border-1 border-red-500 px-2 py-1 rounded hover:bg-red-500 hover:text-white transition-colors duration-200"
+            >
+              Clear All
+            </button>
+          )}
+          <div className="flex-grow"></div>
           <button className="text-white text-xl border-2 border-gray-400 bg-gravel-950 px-4 py-2 rounded hover:bg-gravel-500 hover:text-white transition-colors duration-200">
             Go!
           </button>
