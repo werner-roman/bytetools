@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useDropzone } from "react-dropzone";
+import { Trash2 } from "lucide-react";
 
 const ToolBox = ({
   toolName,
@@ -13,6 +14,10 @@ const ToolBox = ({
   const onDrop = (acceptedFiles: File[]) => {
     const kmzFiles = acceptedFiles.filter(file => file.name.endsWith(".kmz"));
     setFiles(prevFiles => [...prevFiles, ...kmzFiles]);
+  };
+
+  const removeFile = (fileName: string) => {
+    setFiles(prevFiles => prevFiles.filter(file => file.name !== fileName));
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -46,9 +51,17 @@ const ToolBox = ({
             )}
           </p>
           {files.length > 0 && (
-            <ul className="text-gray-400 mt-4">
+            <ul className="text-gray-400 mt-4 w-full">
               {files.map((file, index) => (
-                <li key={index}>{file.name}</li>
+                <li key={index} className="flex justify-between items-center mb-2">
+                  {file.name}
+                  <button
+                    onClick={() => removeFile(file.name)}
+                    className="text-red-500 hover:text-red-700 border-1 border-gray-400 rounded-lg p-2 mb-2"
+                  >
+                    <Trash2 size={20} />
+                  </button>
+                </li>
               ))}
             </ul>
           )}
