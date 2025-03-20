@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Toaster } from "sonner";
 import { mergeKMZFiles } from "@/lib/kmzMerger";
+import { reverseKMZFiles } from "@/lib/kmzReverser";
 import FileDropzone from "./FileDropzone";
 
 const ToolBox = ({
@@ -26,6 +27,10 @@ const ToolBox = ({
     await mergeKMZFiles(files, setIsProcessing);
   };
 
+  const handleReverseKMZFiles = async () => {
+    await reverseKMZFiles(files, setIsProcessing);
+  };
+
   return (
     <div className="w-full max-w-2xl">
       <Toaster position="bottom-right" theme="dark" />
@@ -48,6 +53,17 @@ const ToolBox = ({
           {toolName === "KMZ-Merger" && (
             <button
               onClick={handleMergeKMZFiles}
+              disabled={isProcessing}
+              className={`text-white text-xl border-2 border-gray-400 bg-gravel-950 px-4 py-2 rounded hover:bg-gravel-500 hover:text-white transition-colors duration-200 ${
+                isProcessing ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+            >
+              {isProcessing ? "Processing..." : "Go!"}
+            </button>
+          )}
+          {toolName === "KMZ-Reverse" && (
+            <button
+              onClick={handleReverseKMZFiles}
               disabled={isProcessing}
               className={`text-white text-xl border-2 border-gray-400 bg-gravel-950 px-4 py-2 rounded hover:bg-gravel-500 hover:text-white transition-colors duration-200 ${
                 isProcessing ? "opacity-50 cursor-not-allowed" : ""
