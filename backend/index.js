@@ -9,10 +9,11 @@ dotenv.config({ path: '.env.local' }); // Load environment variables from .env.l
 const app = express();
 const port = 3001;
 
-const allowedOrigins = [process.env.FRONTEND_URL]; // Use environment variable for flexibility
+const allowedOrigins = [process.env.FRONTEND_URL, process.env.SVIX_API_URL]; // Add SVIX_API_URL to allowed origins
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
+      console.log('Origin:', origin);
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
