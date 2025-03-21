@@ -59,15 +59,24 @@ app.post('/strava/token', async (req, res) => {
 });
 
 app.post('/set-default-credits', async (req, res) => {
-  const { userId } = req.body;
-
   try {
+    // Extract userId directly from the "data" object in the request body
+    const { id: userId } = req.body.data;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required.' });
+    }
+
+    // Fetch the user from Clerk
     const user = await clerkClient.users.getUser(userId);
+
+    // Check if the user already has credits in privateMetadata
     if (!user.privateMetadata.credits) {
       await clerkClient.users.updateUserMetadata(userId, {
-        privateMetadata: { credits: 5 },
+        privateMetadata: { credits: 5 }, // Set default credits to 5
       });
     }
+
     res.status(200).json({ message: 'Default credits set successfully.' });
   } catch (error) {
     console.error('Error setting default credits:', error);
