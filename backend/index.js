@@ -12,10 +12,11 @@ const port = 3001;
 const allowedOrigins = [process.env.FRONTEND_URL, process.env.SVIX_API_URL]; // Add SVIX_API_URL to allowed origins
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      console.log('Origin:', origin);
+    if (!origin || allowedOrigins.some(allowedOrigin => origin.startsWith(allowedOrigin))) {
+      console.log('CORS allowed for origin:', origin);
       callback(null, true);
     } else {
+      console.error('CORS blocked for origin:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
