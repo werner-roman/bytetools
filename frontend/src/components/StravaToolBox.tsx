@@ -161,6 +161,12 @@ const StravaToolBox = ({
 
       setActivitiesCount(count);
 
+      // Check if there are any activities to download
+      if (count <= 0) {
+        toast.error("No activities found with the current settings. Please adjust your selection.");
+        return;
+      }
+
       // Step 1: Fetch user's current credits
       const creditsResponse = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/get-credits?userId=${user?.id}`
@@ -248,6 +254,9 @@ const StravaToolBox = ({
       </button>
       <div className="border-2 border-gray-400 rounded-lg p-4 mb-8">
         <h1 className="text-xl font-bold mb-2">{toolName}</h1>
+        <p className="text-sm text-gray-400 mb-4">
+        {toolName === "Strava bulk download" &&
+                    "Download your own activities by count or date range as GPX."}</p>
         {!isStravaConnected ? (
           <button
             onClick={handleConnectStrava}
