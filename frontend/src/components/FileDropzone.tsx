@@ -58,7 +58,7 @@ const FileDropzone = ({ files, setFiles, removeFile, clearAllFiles }: FileDropzo
                 {file.name}
                 <button
                   onClick={(event) => removeFile(file.name, event)}
-                  className="text-red-500 hover:text-red-700 border-1 border-gray-400 rounded-lg p-2 mb-2"
+                  className="text-red-500 hover:text-red-700 border-1 border-gray-400 rounded-lg p-2"
                 >
                   <Trash2 size={20} />
                 </button>
@@ -67,14 +67,6 @@ const FileDropzone = ({ files, setFiles, removeFile, clearAllFiles }: FileDropzo
           </ul>
         )}
       </div>
-      {files.length > 0 && (
-        <button
-          onClick={clearAllFiles}
-          className="text-red-500 text-sm border-1 border-red-500 px-2 py-1 rounded hover:bg-red-500 hover:text-white transition-colors duration-200"
-        >
-          Clear All
-        </button>
-      )}
     </div>
   );
 };

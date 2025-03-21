@@ -49,6 +49,14 @@ const ToolBox = ({
           clearAllFiles={clearAllFiles}
         />
         <div className="flex justify-between items-center">
+          {files.length > 0 && (
+            <button
+              onClick={clearAllFiles}
+              className="text-red-500 text-sm border-1 border-red-500 px-2 py-1 rounded hover:bg-red-500 hover:text-white transition-colors duration-200"
+            >
+              Clear All
+            </button>
+          )}
           <div className="flex-grow"></div>
           {toolName === "KMZ Merger" && (
             <button
