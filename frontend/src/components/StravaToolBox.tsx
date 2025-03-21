@@ -251,7 +251,7 @@ const StravaToolBox = ({
         {!isStravaConnected ? (
           <button
             onClick={handleConnectStrava}
-            className="text-white text-xl border-2 border-gray-400 bg-gravel-950 px-4 py-2 rounded hover:bg-gravel-500 hover:text-white transition-colors duration-200"
+            className="text-white text-xl border-2 border-gray-400 bg-warning-500 px-4 py-2 rounded hover:bg-gravel-500 hover:text-white transition-colors duration-200"
           >
             Connect to Strava
           </button>

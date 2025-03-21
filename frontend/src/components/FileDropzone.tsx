@@ -9,7 +9,7 @@ interface FileDropzoneProps {
   clearAllFiles: () => void;
 }
 
-const FileDropzone = ({ files, setFiles, removeFile, clearAllFiles }: FileDropzoneProps) => {
+const FileDropzone = ({ files, setFiles, removeFile }: FileDropzoneProps) => {
   const onDrop = (acceptedFiles: File[]) => {
     const kmzFiles = acceptedFiles.filter(file => file.name.endsWith(".kmz"));
     const newFiles = kmzFiles.filter(
