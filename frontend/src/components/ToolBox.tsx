@@ -50,7 +50,7 @@ const ToolBox = ({
         />
         <div className="flex justify-between items-center">
           <div className="flex-grow"></div>
-          {toolName === "KMZ-Merger" && (
+          {toolName === "KMZ Merger" && (
             <button
               onClick={handleMergeKMZFiles}
               disabled={isProcessing}
@@ -61,7 +61,7 @@ const ToolBox = ({
               {isProcessing ? "Processing..." : "Go!"}
             </button>
           )}
-          {toolName === "KMZ-Reverse" && (
+          {toolName === "KMZ Reverse" && (
             <button
               onClick={handleReverseKMZFiles}
               disabled={isProcessing}
