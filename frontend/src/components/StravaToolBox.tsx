@@ -337,7 +337,7 @@ const StravaToolBox = ({
           <AlertDialogHeader>
             <AlertDialogTitle className="text-xl font-bold">Confirm Download</AlertDialogTitle>
             <AlertDialogDescription className="text-gray-400">
-              You are about to download <span className="text-red-600 text-lg">{activitiesCount}</span> activities within the selected date range. Do you want to proceed?
+              You are about to spend <span className="text-red-600 text-lg">{activitiesCount}</span> credits, one per activity, within your selection. Do you want to proceed?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex justify-end space-x-2">
