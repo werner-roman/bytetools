@@ -121,7 +121,7 @@ function App() {
           </div>
         )}
       </div>
-      <Footer />
+      <Footer selectedTool={selectedTool}/>
     </main>
   );
 }

@@ -1,3 +1,5 @@
+import StravaLogo from "../assets/api_logo_pwrdBy_strava_horiz_white.svg";
+
 function LoadingGitHubSVG() {
   return (
     <svg
@@ -15,9 +17,15 @@ function LoadingGitHubSVG() {
   );
 }
 
-export default function Footer() {
+type FooterProps = {
+  selectedTool: string | null;
+};
+
+export default function Footer({ selectedTool }: FooterProps) {
+  const isStravaBulkDownload = selectedTool === "strava-bulk-download";
+
   return (
-    <footer className="text-sm text-center text-gray-400  gap-2 fixed-bottom left-0 right-0 flex justify-center mb-5">
+    <footer className="text-sm text-center text-gray-400 gap-2 fixed-bottom left-0 right-0 flex justify-center mb-5">
       <a
         href="https://github.com/werner-roman/bytetools"
         target="_blank"
@@ -26,8 +34,11 @@ export default function Footer() {
       >
         GitHub
         <span>
-          <LoadingGitHubSVG />{" "}
+          <LoadingGitHubSVG />
         </span>
+        {isStravaBulkDownload && (
+          <img src={StravaLogo} alt="Powered by Strava" className="h-3" />
+        )}
       </a>
     </footer>
   );

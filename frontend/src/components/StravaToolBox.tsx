@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { Toaster, toast } from "sonner";
-import { downloadStravaActivities, fetchActivitiesCount } from "@/lib/stravaUtils";
+import {
+  downloadStravaActivities,
+  fetchActivitiesCount,
+} from "@/lib/stravaUtils";
 import { Progress } from "@/components/ui/progress";
 import {
   connectToStrava,
@@ -28,6 +31,8 @@ import {
   AlertDialogFooter,
 } from "@/components/ui/alert-dialog";
 import { useUser } from "@clerk/clerk-react";
+import btnStravaConnect from "@/assets/btn_strava_connect_with_orange.svg";
+import btnStravaConnectWhite from "@/assets/btn_strava_connect_with_white.svg";
 
 const DateRangePicker = ({
   selectedRange,
@@ -86,7 +91,9 @@ const StravaToolBox = ({
   const [stravaToken, setStravaToken] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<number | null>(null);
   const [downloadProgress, setDownloadProgress] = useState(0);
-  const [filterType, setFilterType] = useState<"dateRange" | "lastActivities">("dateRange");
+  const [filterType, setFilterType] = useState<"dateRange" | "lastActivities">(
+    "dateRange"
+  );
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(),
     to: addDays(new Date(), 7),
@@ -154,7 +161,11 @@ const StravaToolBox = ({
     try {
       // Determine the number of activities to download
       if (filterType === "dateRange" && dateRange?.from && dateRange?.to) {
-        count = await fetchActivitiesCount(stravaToken, dateRange.from, dateRange.to);
+        count = await fetchActivitiesCount(
+          stravaToken,
+          dateRange.from,
+          dateRange.to
+        );
       } else if (filterType === "lastActivities" && lastActivitiesCount > 0) {
         count = lastActivitiesCount;
       }
@@ -163,7 +174,9 @@ const StravaToolBox = ({
 
       // Check if there are any activities to download
       if (count <= 0) {
-        toast.error("No activities found with the current settings. Please adjust your selection.");
+        toast.error(
+          "No activities found with the current settings. Please adjust your selection."
+        );
         return;
       }
 
@@ -215,7 +228,10 @@ const StravaToolBox = ({
       // Step 4: Proceed with the download
       setIsAlertOpen(true);
     } catch (error) {
-      console.error("Error fetching activities count or deducting credits:", error);
+      console.error(
+        "Error fetching activities count or deducting credits:",
+        error
+      );
       toast.error("An error occurred while processing your request.");
     }
   };
@@ -229,7 +245,10 @@ const StravaToolBox = ({
         stravaToken!,
         (progress: number) => setDownloadProgress(progress),
         filterType === "lastActivities" ? lastActivitiesCount : undefined,
-        filterType === "dateRange" && dateRange && dateRange.from && dateRange.to
+        filterType === "dateRange" &&
+          dateRange &&
+          dateRange.from &&
+          dateRange.to
           ? { from: dateRange.from, to: dateRange.to }
           : undefined
       );
@@ -255,20 +274,40 @@ const StravaToolBox = ({
       <div className="border-2 border-gray-400 rounded-lg p-4 mb-8">
         <h1 className="text-xl font-bold mb-2">{toolName}</h1>
         <p className="text-sm text-gray-400 mb-4">
-        {toolName === "Strava bulk download" &&
-                    "Download your own activities by count or date range as GPX."}</p>
+          {toolName === "Strava bulk download" &&
+            "Download your own activities by count or date range as GPX."}
+        </p>
         {!isStravaConnected ? (
           <button
             onClick={handleConnectStrava}
-            className="text-white text-xl border-2 border-gray-400 bg-warning-500 px-4 py-2 rounded hover:bg-gravel-500 hover:text-white transition-colors duration-200"
+            className="transition-colors duration-200 hover:bg-transparent"
+            style={{
+              height: "48px",
+              backgroundColor: "transparent",
+              border: "none",
+              padding: 0,
+            }}
           >
-            Connect to Strava
+            <img
+              src={btnStravaConnectWhite}
+              alt="Connect to Strava"
+              style={{ height: "48px" }}
+              onMouseOver={(e) =>
+                ((e.currentTarget as HTMLImageElement).src = btnStravaConnect)
+              }
+              onMouseOut={(e) =>
+                ((e.currentTarget as HTMLImageElement).src =
+                  btnStravaConnectWhite)
+              }
+            />
           </button>
         ) : (
           <div className="flex flex-col items-center">
             <div className="border-2 border-dashed border-gray-400 rounded-lg p-4 mt-4 w-full">
               <h2 className="text-lg font-bold mb-2">Download Activities</h2>
-              <p className="mb-4">Select how you want to filter your activities for download</p>
+              <p className="mb-4">
+                Select how you want to filter your activities for download
+              </p>
               <div className="flex flex-col mb-4">
                 <label className="flex items-center mb-2">
                   <input
@@ -311,14 +350,19 @@ const StravaToolBox = ({
                     <Input
                       type="number"
                       value={lastActivitiesCount}
-                      onChange={(e) => setLastActivitiesCount(Number(e.target.value))}
+                      onChange={(e) =>
+                        setLastActivitiesCount(Number(e.target.value))
+                      }
                       className="w-full p-2 border border-gray-400 rounded"
                     />
                   </label>
                 </div>
               )}
               {isProcessing && (
-                <Progress value={downloadProgress} className="w-full mt-2 border-2 border-gray-400 [&>div]:bg-green-600" />
+                <Progress
+                  value={downloadProgress}
+                  className="w-full mt-2 border-2 border-gray-400 [&>div]:bg-green-600"
+                />
               )}
             </div>
             <div className="flex justify-between w-full mt-4">
@@ -338,22 +382,46 @@ const StravaToolBox = ({
                 {isProcessing ? "Downloading..." : "Download"}
               </button>
             </div>
+            <div className="flex mg-l-auto w-full">
+              <a
+                href="https://www.strava.com/athlete/training"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mg-l-auto w-full text-right px-2"
+              >
+                <p className="mt-2 text-sm text-strava-500 hover:text-gray-400 transition-colors duration-200">
+                  View on Strava
+                </p>
+              </a>
+            </div>
           </div>
         )}
       </div>
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <AlertDialogContent className="bg-asphalt-950 text-white border-gray-400">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-xl font-bold">Confirm Download</AlertDialogTitle>
+            <AlertDialogTitle className="text-xl font-bold">
+              Confirm Download
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-gray-400">
-              You are about to spend <span className="text-red-600 text-lg">{activitiesCount}</span> credits, one per activity, within your selection. Do you want to proceed?
+              You are about to spend{" "}
+              <span className="text-red-600 text-lg">{activitiesCount}</span>{" "}
+              credits, one per activity, within your selection. Do you want to
+              proceed?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={() => setIsAlertOpen(false)} className="border-gray-400 text-gray-800 hover:bg-gray-400 hover:text-white">
+            <Button
+              variant="outline"
+              onClick={() => setIsAlertOpen(false)}
+              className="border-gray-400 text-gray-800 hover:bg-gray-400 hover:text-white"
+            >
               Cancel
             </Button>
-            <Button onClick={proceedWithDownload} className="bg-orange-900 text-black hover:bg-orange-700">
+            <Button
+              onClick={proceedWithDownload}
+              className="bg-orange-900 text-black hover:bg-orange-700"
+            >
               Confirm
             </Button>
           </AlertDialogFooter>
