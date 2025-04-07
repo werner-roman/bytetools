@@ -36,7 +36,7 @@ interface FileDropzoneProps {
   removeFile: (fileName: string, event: React.MouseEvent) => void;
   onTracksReordered?: (reorderedFiles: KMZFileWithTracks[]) => void;
   globalSortEnabled?: boolean;
-  onGlobalTracksReorder?: (tracks: TrackItem[]) => void; // <-- Add this prop
+  onGlobalTracksReorder?: (tracks: TrackItem[]) => void;
 }
 
 export default function FileDropzone({
@@ -45,14 +45,14 @@ export default function FileDropzone({
   removeFile,
   onTracksReordered,
   globalSortEnabled = false,
-  onGlobalTracksReorder, // <-- Destructure the prop
+  onGlobalTracksReorder,
 }: FileDropzoneProps) {
   const [kmzFilesWithTracks, setKmzFilesWithTracks] = useState<KMZFileWithTracks[]>([]);
   const [globalTracks, setGlobalTracks] = useState<TrackItem[]>([]);
 
   useEffect(() => {
     const extractTracks = async () => {
-      if (globalSortEnabled) {  // changed condition
+      if (globalSortEnabled) {
         const filesWithTracks = await Promise.all(
           files.map(async (file) => {
             try {
@@ -92,7 +92,7 @@ export default function FileDropzone({
         setKmzFilesWithTracks(filesWithTracks);
         onTracksReordered?.(filesWithTracks);
 
-        if (globalSortEnabled) {  // removed mergeMode check here
+        if (globalSortEnabled) {
           let allTracks: TrackItem[] = [];
           filesWithTracks.forEach((f, fIndex) => {
             f.tracks?.forEach((t: { name: string; coordinates: string }, tIndex: number) => {
@@ -144,7 +144,6 @@ export default function FileDropzone({
       const newIndex = prev.findIndex((t) => t.id === over.id);
       const reordered = arrayMove(prev, oldIndex, newIndex);
 
-      // Pass the reordered global tracks upward
       if (onGlobalTracksReorder) {
         onGlobalTracksReorder(reordered);
       }
@@ -157,13 +156,36 @@ export default function FileDropzone({
   };
 
   const removeGlobalTrack = (trackId: string) => {
-    setGlobalTracks((prev) => {
-      const updated = prev.filter((t) => t.id !== trackId);
-      if (onTracksReordered) {
-        onTracksReordered(syncGlobalTracksToFiles(updated));
-      }
-      return updated;
-    });
+    console.log("removeGlobalTrack called with ID:", trackId);
+    
+    // Find track before updating state 
+    const currentTracks = [...globalTracks];
+    const trackToRemove = currentTracks.find(t => t.id === trackId);
+    const updatedTracks = currentTracks.filter(t => t.id !== trackId);
+    
+    // Update our component state
+    setGlobalTracks(updatedTracks);
+    
+    // Update parent components directly without setTimeout
+    // which might be causing issues
+    if (onGlobalTracksReorder) {
+      console.log("Calling onGlobalTracksReorder");
+      onGlobalTracksReorder(updatedTracks);
+    }
+    
+    if (onTracksReordered) {
+      console.log("Calling onTracksReordered");
+      const updatedFiles = syncGlobalTracksToFiles(updatedTracks);
+      onTracksReordered(updatedFiles);
+    }
+    
+    // Show success notification
+    if (trackToRemove) {
+      toast.success(`Track "${trackToRemove.name}" deleted`, {
+        description: `Removed from ${trackToRemove.fileName}`,
+        duration: 2000,
+      });
+    }
   };
 
   const onDrop = (acceptedFiles: File[]) => {
@@ -236,7 +258,6 @@ export default function FileDropzone({
                 <div className="flex justify-between items-center w-full">
                   <span className="font-medium">{file.name}</span>
                   <button
-
                     onClick={(event) => removeFile(file.name, event)}
                     className="text-red-500 hover:text-red-700 border-1 border-gray-400 rounded-lg p-2"
                   >
@@ -268,8 +289,11 @@ export default function FileDropzone({
           </ul>
         )}
       </div>
-      {globalSortEnabled && globalTracks.length > 0 && (  // removed mergeMode condition here
+      {globalSortEnabled && globalTracks.length > 0 && (
         <div className="mt-4">
+          <h3 className="font-medium text-white mb-2">
+            Track Order (drag to reorder, click trash to delete)
+          </h3>
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}

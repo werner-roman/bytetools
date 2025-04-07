@@ -28,7 +28,7 @@ describe("KMZ Merger Advanced Complex Reorder E2E", () => {
 
     // 3. Enable Advanced Mode by clicking the switch
     cy.get('[data-slot="switch"]').click()
-    cy.wait(10000) // wait for UI to update and show sortable tracks
+    cy.wait(1000) // wait for UI to update and show sortable tracks
 
     // 4. Use JavaScript to control the DOM directly to reorder the tracks
     cy.window().then(win => {

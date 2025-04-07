@@ -51,7 +51,7 @@ const ToolBox = ({
 				<p className="text-sm text-gray-400 mb-4">
 					{toolName === "KMZ Reverse" && "Reverse the direction of any given KMZ file"}
 					{toolName === "KMZ Merger" &&
-						"Merge multiple KMZ files into one. Enable 'Advanced Mode' to merge all tracks into one and change the sequence."}
+						"Merge multiple KMZ files into one. Enable 'Advanced Mode' to merge all tracks into one, rearrange or remove specific tracks."}
 				</p>
 				<FileDropzone
 					files={files}
