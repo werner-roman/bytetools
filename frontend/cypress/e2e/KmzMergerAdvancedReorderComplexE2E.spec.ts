@@ -139,24 +139,19 @@ describe("KMZ Merger Advanced Complex Reorder E2E", () => {
         const kmlPromises = [
           outputZip.file("doc.kml")?.async("string"),
           expectedZip.file("doc.kml")?.async("string")
-        ];
+        ]
 
         if (!kmlPromises[0] || !kmlPromises[1]) {
-          throw new Error("doc.kml not found in one of the zip files");
+          throw new Error("doc.kml not found in one of the zip files")
         }
 
-        return Promise.all(kmlPromises);
+        return Promise.all(kmlPromises)
       })
       .then(([outputKml, expectedKml]) => {
-        // Use a 5% size difference comparison approach
-        cy.task('log', `Output KML length: ${outputKml.length}`);
-        cy.task('log', `Expected KML length: ${expectedKml.length}`);
-        
-        const sizeDiff = Math.abs(outputKml.length - expectedKml.length);
-        const percentDiff = sizeDiff / expectedKml.length * 100;
-        
-        expect(percentDiff).to.be.lessThan(5);
-      });
+        // Compare the KML contents
+        cy.task('log', 'Successfully extracted both KML files')
+        expect(outputKml).to.equal(expectedKml)
+      })
   });
 });
 
