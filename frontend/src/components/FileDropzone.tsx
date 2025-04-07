@@ -188,6 +188,44 @@ export default function FileDropzone({
     });
   };
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.byteToolsTestHelpers = window.byteToolsTestHelpers || {};
+      window.byteToolsTestHelpers.manuallySwapTracks = (id1: string, id2: string) => {
+        setGlobalTracks((prev) => {
+          const index1 = prev.findIndex(t => t.id === id1);
+          const index2 = prev.findIndex(t => t.id === id2);
+          
+          if (index1 === -1 || index2 === -1) return prev;
+          
+          const reordered = arrayMove(prev, index1, index2);
+          
+          if (onGlobalTracksReorder) {
+            onGlobalTracksReorder(reordered);
+          }
+          
+          if (onTracksReordered) {
+            onTracksReordered(syncGlobalTracksToFiles(reordered));
+          }
+          
+          return reordered;
+        });
+        return true;
+      };
+      
+      // Expose globalTracks for inspection
+      window.byteToolsTestHelpers.getGlobalTracks = () => globalTracks;
+    }
+    
+    // Return cleanup function
+    return () => {
+      if (typeof window !== 'undefined' && window.byteToolsTestHelpers) {
+        delete window.byteToolsTestHelpers.manuallySwapTracks;
+        delete window.byteToolsTestHelpers.getGlobalTracks;
+      }
+    };
+  }, [globalTracks, onGlobalTracksReorder, onTracksReordered]);
+
   const removeGlobalTrack = (trackId: string) => {
     console.log("removeGlobalTrack called with ID:", trackId);
 
@@ -391,4 +429,14 @@ export default function FileDropzone({
       )}
     </div>
   );
+}
+
+// Add TypeScript interface for window object
+declare global {
+  interface Window {
+    byteToolsTestHelpers?: {
+      manuallySwapTracks?: (id1: string, id2: string) => boolean;
+      getGlobalTracks?: () => any[];
+    };
+  }
 }

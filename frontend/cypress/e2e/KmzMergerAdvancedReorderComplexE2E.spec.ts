@@ -24,84 +24,69 @@ describe("KMZ Merger Advanced Complex Reorder E2E", () => {
       force: true
     })
 
-    cy.wait(1000) // wait for processing & upload to complete
+    cy.wait(2000) // wait for processing & upload to complete
 
     // 3. Enable Advanced Mode by clicking the switch
     cy.get('[data-slot="switch"]').click()
-    cy.wait(1000) // wait for UI to update and show sortable tracks
+    cy.wait(2000) // wait for UI to update and show sortable tracks
 
-    // 4. Use JavaScript to control the DOM directly to reorder the tracks
+    // 4. Log track information for debugging
     cy.window().then(win => {
       win.eval(`
-        (function() {
-          // Function to find tracks by text content
-          function findTrackByText(searchText) {
-            const tracks = document.querySelectorAll('[aria-roledescription="sortable"]');
-            for (let i = 0; i < tracks.length; i++) {
-              if (tracks[i].textContent.includes(searchText)) {
-                console.log("Found track with text:", searchText, tracks[i].textContent);
-                return tracks[i];
-              }
-            }
-            console.log("Track not found:", searchText);
-            return null;
-          }
-          
-          // Find our two tracks
-          const track1269 = findTrackByText("1269 - Ortstock");
-          const track5706 = findTrackByText("5706 - Schafbärg");
-          
-          // Log what we found for debugging
-          console.log("Track 1269:", track1269 ? track1269.textContent : "not found");
-          console.log("Track 5706:", track5706 ? track5706.textContent : "not found");
-          
-          // Log all tracks to see what's available
-          console.log("All tracks:");
-          document.querySelectorAll('[aria-roledescription="sortable"]').forEach(t => {
-            console.log(" - " + t.textContent);
-          });
-          
-          if (!track1269 || !track5706) {
-            console.error("Could not find one or both tracks");
-            return;
-          }
-          
-          try {
-            // Simple DOM manipulation approach
-            const container = track1269.parentElement;
-            
-            if (container) {
-              // Get current indices
-              const allTracks = Array.from(container.querySelectorAll('[aria-roledescription="sortable"]'));
-              const track1269Index = allTracks.indexOf(track1269);
-              const track5706Index = allTracks.indexOf(track5706);
-              
-              console.log("Track indices:", track1269Index, track5706Index);
-              
-              // Swap the nodes directly
-              if (track1269Index !== -1 && track5706Index !== -1) {
-                // Clone nodes to avoid issues with references
-                const track1269Clone = track1269.cloneNode(true);
-                const track5706Clone = track5706.cloneNode(true);
-                
-                // Replace the actual nodes
-                container.replaceChild(track5706Clone, track1269);
-                container.replaceChild(track1269Clone, track5706);
-                
-                console.log("DOM manipulation completed");
-              }
-            }
-          } catch (e) {
-            console.error("Error during track manipulation:", e);
-          }
-        })();
+        // Log all tracks and their data-testids
+        console.log("=== Track Information ===");
+        const tracks = Array.from(document.querySelectorAll('[data-testid^="track-item-"]'));
+        tracks.forEach((t, i) => {
+          const testId = t.getAttribute('data-testid');
+          console.log(\`Track \${i}: \${t.textContent}, TestID: \${testId}\`);
+        });
       `);
-      
-      // Wait for the manipulation to complete
-      cy.wait(3000);
     });
 
-    // 5. Click the "Go!" button (Merge)
+    // 5. Use the exposed helper function to swap tracks directly
+    cy.window().then(win => {
+      // First get the track IDs
+      const tracks = Cypress.$('[data-testid^="track-item-"]');
+      const trackIds = [];
+      
+      tracks.each((i, el) => {
+        const trackId = el.getAttribute('data-testid').replace('track-item-', '');
+        const trackText = el.textContent;
+        trackIds.push({ id: trackId, text: trackText });
+        cy.task('log', `Track ${i}: ${trackText}, ID: ${trackId}`);
+      });
+      
+      // Find the Ortstock and Schafberg tracks
+      const track1269 = trackIds.find(t => t.text.includes("1269 - Ortstock"));
+      const track5706 = trackIds.find(t => t.text.includes("5706 - Schafbärg"));
+      
+      if (track1269 && track5706) {
+        cy.task('log', `Found tracks to swap: ${track1269.id} and ${track5706.id}`);
+        
+        // Use the exposed helper function to swap them
+        win.byteToolsTestHelpers.manuallySwapTracks(track1269.id, track5706.id);
+        cy.task('log', 'Tracks swapped using the helper function');
+      } else {
+        cy.task('log', 'Could not find both tracks to swap');
+      }
+    });
+    
+    // 6. Wait for the state to update
+    cy.wait(2000);
+
+    // 7. Verify the swap worked by checking the DOM order
+    cy.window().then(win => {
+      win.eval(`
+        console.log("=== Track Order After Reordering ===");
+        const updatedTracks = Array.from(document.querySelectorAll('[data-testid^="track-item-"]'));
+        updatedTracks.forEach((t, i) => {
+          const testId = t.getAttribute('data-testid');
+          console.log(\`Track \${i}: \${t.textContent}, TestID: \${testId}\`);
+        });
+      `);
+    });
+
+    // 8. Click the "Go!" button to merge
     cy.contains("Go!").click();
 
     // Wait for download
@@ -109,7 +94,7 @@ describe("KMZ Merger Advanced Complex Reorder E2E", () => {
 
     cy.task('log', 'Starting file comparison...');
 
-    // 6. Compare downloaded file with expected file
+    // 9. Compare downloaded file with expected file
     cy.readFile("cypress/downloads/merged_advanced.kmz", null)
       .then(outputFileContent => {
         if (!outputFileContent) {
