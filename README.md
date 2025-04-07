@@ -17,7 +17,7 @@ You can access the live website here: [Bytetools](https://bytetools.org)
 ## Tools Available
 
 - **KMZ-Reverse**: Reverse the direction of a KMZ file.
-- **KMZ-Merger**: Merge multiple KMZ files into one.
+- **KMZ-Merger**: Merge multiple KMZ files into one, and reorder and delete tracks.
 - **Strava bulk downloader**: Download multiple activities by amount or date range.
 
 ## Getting Started
@@ -91,6 +91,16 @@ The E2E tests are located in the `frontend/cypress/e2e` directory and test the f
 - **KMZ Merger (Standard Mode)**: Tests merging multiple KMZ files in standard mode
 - **KMZ Merger (Advanced Mode)**: Tests merging KMZ files with advanced settings without reordering tracks
 - **KMZ Merger (Advanced Mode with Reordering)**: Tests merging KMZ files with track reordering
+- **KMZ Merger (Advanced Mode with Track Deletion)**: Tests merging KMZ files after deleting specific tracks
+
+### Test Helpers
+
+To facilitate reliable testing of complex UI interactions like drag-and-drop and track reordering, Bytetools exposes helper functions via the `window.byteToolsTestHelpers` object:
+
+- **manuallySwapTracks(id1, id2)**: Allows tests to programmatically swap tracks by their IDs, ensuring React state is properly updated
+- **getGlobalTracks()**: Provides access to the current track state for verification
+
+These helpers are especially useful for testing complex operations like track reordering where direct DOM manipulation might not update the underlying React state.
 
 ### Running Tests Locally
 
@@ -152,6 +162,7 @@ When adding new tools or features to Bytetools, please include appropriate E2E t
 1. Verify the basic functionality works
 2. Test edge cases and potential failure scenarios
 3. Compare output files with expected results
+4. Use test helpers when available for complex UI interactions
 
 ## Limitations
 

@@ -28,6 +28,7 @@ export interface TrackItem {
   coordinates: string;
   fileIndex: number;
   fileName: string;
+  uniqueId: string;
 }
 
 interface FileDropzoneProps {
@@ -36,7 +37,7 @@ interface FileDropzoneProps {
   removeFile: (fileName: string, event: React.MouseEvent) => void;
   onTracksReordered?: (reorderedFiles: KMZFileWithTracks[]) => void;
   globalSortEnabled?: boolean;
-  onGlobalTracksReorder?: (tracks: TrackItem[]) => void; // <-- Add this prop
+  onGlobalTracksReorder?: (tracks: TrackItem[]) => void;
 }
 
 export default function FileDropzone({
@@ -45,14 +46,15 @@ export default function FileDropzone({
   removeFile,
   onTracksReordered,
   globalSortEnabled = false,
-  onGlobalTracksReorder, // <-- Destructure the prop
+  onGlobalTracksReorder,
 }: FileDropzoneProps) {
   const [kmzFilesWithTracks, setKmzFilesWithTracks] = useState<KMZFileWithTracks[]>([]);
   const [globalTracks, setGlobalTracks] = useState<TrackItem[]>([]);
+  const [trackIdsToDelete, setTrackIdsToDelete] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const extractTracks = async () => {
-      if (globalSortEnabled) {  // changed condition
+      if (globalSortEnabled) {
         const filesWithTracks = await Promise.all(
           files.map(async (file) => {
             try {
@@ -92,17 +94,23 @@ export default function FileDropzone({
         setKmzFilesWithTracks(filesWithTracks);
         onTracksReordered?.(filesWithTracks);
 
-        if (globalSortEnabled) {  // removed mergeMode check here
+        if (globalSortEnabled) {
           let allTracks: TrackItem[] = [];
           filesWithTracks.forEach((f, fIndex) => {
             f.tracks?.forEach((t: { name: string; coordinates: string }, tIndex: number) => {
-              allTracks.push({
-                id: `${fIndex}-${tIndex}`,
-                name: t.name,
-                coordinates: t.coordinates,
-                fileIndex: fIndex,
-                fileName: f.name,
-              });
+              const trackId = `${fIndex}-${tIndex}`;
+              const uniqueId = `${f.name}:${tIndex}:${t.name}`;
+
+              if (!trackIdsToDelete.has(uniqueId)) {
+                allTracks.push({
+                  id: trackId,
+                  name: t.name,
+                  coordinates: t.coordinates,
+                  fileIndex: fIndex,
+                  fileName: f.name,
+                  uniqueId: uniqueId,
+                });
+              }
             });
           });
           setGlobalTracks(allTracks);
@@ -117,7 +125,32 @@ export default function FileDropzone({
       }
     };
     extractTracks();
-  }, [files, globalSortEnabled]);
+  }, [files, globalSortEnabled, trackIdsToDelete]);
+
+  useEffect(() => {
+    setTrackIdsToDelete((prev) => {
+      const updated = new Set(prev);
+      const currentFileNames = new Set(files.map((file) => file.name));
+      for (const uniqueId of updated) {
+        const [fileName] = uniqueId.split(":");
+        if (!currentFileNames.has(fileName)) {
+          updated.delete(uniqueId);
+        }
+      }
+      return updated;
+    });
+  }, [files]);
+
+  useEffect(() => {
+    // If there are no files but we still have tracks, clear the tracks
+    if (files.length === 0 && globalTracks.length > 0) {
+      console.log("Inconsistent state detected: Files empty but tracks exist, clearing tracks");
+      setGlobalTracks([]);
+      setKmzFilesWithTracks([]);
+      if (onGlobalTracksReorder) onGlobalTracksReorder([]);
+      if (onTracksReordered) onTracksReordered([]);
+    }
+  }, [files, globalTracks, onGlobalTracksReorder, onTracksReordered]);
 
   const syncGlobalTracksToFiles = (updatedGlobalTracks: TrackItem[]) => {
     const newFilesWithTracks = structuredClone(kmzFilesWithTracks);
@@ -144,7 +177,6 @@ export default function FileDropzone({
       const newIndex = prev.findIndex((t) => t.id === over.id);
       const reordered = arrayMove(prev, oldIndex, newIndex);
 
-      // Pass the reordered global tracks upward
       if (onGlobalTracksReorder) {
         onGlobalTracksReorder(reordered);
       }
@@ -156,14 +188,121 @@ export default function FileDropzone({
     });
   };
 
-  const removeGlobalTrack = (trackId: string) => {
-    setGlobalTracks((prev) => {
-      const updated = prev.filter((t) => t.id !== trackId);
-      if (onTracksReordered) {
-        onTracksReordered(syncGlobalTracksToFiles(updated));
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.byteToolsTestHelpers = window.byteToolsTestHelpers || {};
+      window.byteToolsTestHelpers.manuallySwapTracks = (id1: string, id2: string) => {
+        setGlobalTracks((prev) => {
+          const index1 = prev.findIndex(t => t.id === id1);
+          const index2 = prev.findIndex(t => t.id === id2);
+          
+          if (index1 === -1 || index2 === -1) return prev;
+          
+          const reordered = arrayMove(prev, index1, index2);
+          
+          if (onGlobalTracksReorder) {
+            onGlobalTracksReorder(reordered);
+          }
+          
+          if (onTracksReordered) {
+            onTracksReordered(syncGlobalTracksToFiles(reordered));
+          }
+          
+          return reordered;
+        });
+        return true;
+      };
+      
+      // Expose globalTracks for inspection
+      window.byteToolsTestHelpers.getGlobalTracks = () => globalTracks;
+    }
+    
+    // Return cleanup function
+    return () => {
+      if (typeof window !== 'undefined' && window.byteToolsTestHelpers) {
+        delete window.byteToolsTestHelpers.manuallySwapTracks;
+        delete window.byteToolsTestHelpers.getGlobalTracks;
       }
+    };
+  }, [globalTracks, onGlobalTracksReorder, onTracksReordered]);
+
+  const removeGlobalTrack = (trackId: string) => {
+    console.log("removeGlobalTrack called with ID:", trackId);
+
+    const currentTracks = [...globalTracks];
+    const trackToRemove = currentTracks.find((t) => t.id === trackId);
+
+    if (!trackToRemove) return;
+
+    // Add the track to the deletion set first
+    setTrackIdsToDelete((prev) => {
+      const updated = new Set(prev);
+      updated.add(trackToRemove.uniqueId);
       return updated;
     });
+
+    // Get the file information for the track being deleted
+    const fileIndex = trackToRemove.fileIndex;
+    const fileName = trackToRemove.fileName;
+
+    // Filter out the track from our local state
+    const updatedTracks = currentTracks.filter((t) => t.id !== trackId);
+    setGlobalTracks(updatedTracks);
+
+    // Determine if this was the last track from the file
+    const remainingTracksFromSameFile = updatedTracks.some((t) => t.fileIndex === fileIndex);
+    
+    console.log(`Tracks remaining from ${fileName}: ${remainingTracksFromSameFile ? 'Yes' : 'No'}`);
+    
+    // If no tracks remain from this file, remove the file
+    if (!remainingTracksFromSameFile) {
+      console.log(`No tracks remain from file: ${fileName}, removing file immediately`);
+      
+      // Execute file removal in a separate function to ensure it runs properly
+      const removeEmptyFile = () => {
+        console.log(`Executing file removal for ${fileName}`);
+        
+        // Update kmzFilesWithTracks directly as well
+        setKmzFilesWithTracks(prev => prev.filter(file => file.name !== fileName));
+        
+        // Update files state
+        setFiles((prevFiles) => {
+          const updatedFiles = prevFiles.filter((file) => file.name !== fileName);
+          console.log(`Files before removal: ${prevFiles.length}, after: ${updatedFiles.length}`);
+          return updatedFiles;
+        });
+
+        // If this was the last file, forcibly clear all tracks
+        if (files.length <= 1) {
+          console.log("This was the last file, clearing all tracks");
+          setGlobalTracks([]);
+          onGlobalTracksReorder?.([]);
+        }
+
+        toast.info(`File "${fileName}" removed`, {
+          description: "All tracks were deleted from this file",
+          duration: 2000,
+        });
+      };
+      
+      // Execute the file removal immediately
+      removeEmptyFile();
+    } else {
+      toast.success(`Track "${trackToRemove.name}" deleted`, {
+        description: `Removed from ${trackToRemove.fileName}`,
+        duration: 2000,
+      });
+    }
+
+    // Update parent components with the updated tracks
+    if (onGlobalTracksReorder) {
+      onGlobalTracksReorder(updatedTracks);
+    }
+    
+    if (onTracksReordered) {
+      const updatedFiles = syncGlobalTracksToFiles(updatedTracks);
+      onTracksReordered(updatedFiles);
+    }
   };
 
   const onDrop = (acceptedFiles: File[]) => {
@@ -229,14 +368,13 @@ export default function FileDropzone({
         <p className="mb-4">
           {isDragActive ? "Drop the files here ..." : "Drop or upload your .kmz files"}
         </p>
-        {kmzFilesWithTracks.length > 0 && (
+        {kmzFilesWithTracks.length > 0 && files.length > 0 && (
           <ul className="text-gray-400 mt-4 w-full">
             {kmzFilesWithTracks.map((file, fileIndex) => (
               <li key={fileIndex} className="flex flex-col items-start mb-4">
                 <div className="flex justify-between items-center w-full">
                   <span className="font-medium">{file.name}</span>
                   <button
-
                     onClick={(event) => removeFile(file.name, event)}
                     className="text-red-500 hover:text-red-700 border-1 border-gray-400 rounded-lg p-2"
                   >
@@ -268,8 +406,11 @@ export default function FileDropzone({
           </ul>
         )}
       </div>
-      {globalSortEnabled && globalTracks.length > 0 && (  // removed mergeMode condition here
+      {globalSortEnabled && globalTracks.length > 0 && files.length > 0 && (
         <div className="mt-4">
+          <h3 className="font-medium text-white mb-2">
+            Track Order (drag to reorder, click trash to delete)
+          </h3>
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -288,4 +429,14 @@ export default function FileDropzone({
       )}
     </div>
   );
+}
+
+// Add TypeScript interface for window object
+declare global {
+  interface Window {
+    byteToolsTestHelpers?: {
+      manuallySwapTracks?: (id1: string, id2: string) => boolean;
+      getGlobalTracks?: () => any[];
+    };
+  }
 }

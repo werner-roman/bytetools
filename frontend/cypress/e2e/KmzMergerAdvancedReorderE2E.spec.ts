@@ -40,7 +40,7 @@ describe("KMZ Merger Advanced Reorder E2E", () => {
 
     cy.task('log', 'Starting file comparison...')
 
-    // 5. Compare downloaded file with expected file
+    // Create a proper promise chain for file processing
     cy.readFile("cypress/downloads/merged_advanced.kmz", null)
       .then(outputFileContent => {
         if (!outputFileContent) {
@@ -55,6 +55,11 @@ describe("KMZ Merger Advanced Reorder E2E", () => {
               throw new Error('Expected file is empty or does not exist')
             }
             cy.task('log', `Expected file size: ${expectedFileContent.byteLength} bytes`)
+
+            // Safe access to JSZip - check it exists before using
+            if (typeof JSZip !== 'function' && typeof JSZip.loadAsync !== 'function') {
+              throw new Error(`JSZip not properly loaded: ${typeof JSZip}`)
+            }
 
             // Create promises for both zip files
             const zipPromises = [
@@ -80,14 +85,9 @@ describe("KMZ Merger Advanced Reorder E2E", () => {
         return Promise.all(kmlPromises)
       })
       .then(([outputKml, expectedKml]) => {
-        // Use a 5% size difference comparison approach
-        cy.task('log', `Output KML length: ${outputKml.length}`)
-        cy.task('log', `Expected KML length: ${expectedKml.length}`)
-        
-        const sizeDiff = Math.abs(outputKml.length - expectedKml.length)
-        const percentDiff = sizeDiff / expectedKml.length * 100
-        
-        expect(percentDiff).to.be.lessThan(5)
+        // Compare the KML contents
+        cy.task('log', 'Successfully extracted both KML files')
+        expect(outputKml).to.equal(expectedKml)
       })
   })
 })
