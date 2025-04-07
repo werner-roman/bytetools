@@ -44,7 +44,7 @@
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
-    "cypress": "^12.16.0",
+    "cypress": "^14.2.1",
     "cypress-file-upload": "^5.0.8",
     "eslint": "^9.21.0",
     "eslint-plugin-react-hooks": "^5.1.0",
