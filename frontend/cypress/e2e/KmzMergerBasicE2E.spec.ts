@@ -4,57 +4,65 @@ import 'cypress-file-upload'
 
 const JSZip = require('jszip')
 
-describe("KMZ Reverse E2E", () => {
+describe("KMZ Merger E2E", () => {
   beforeEach(() => {
     cy.visit("/")
   })
 
-  it("Reverses a KMZ file and compares the output", () => {
-    // 1. Navigate to the KMZ Reverse tool
-    cy.contains("KMZ Reverse").click()
+  it("Merges KMZ files in normal mode and compares the output", () => {
+    // 1. Navigate to the KMZ Merger tool
+    cy.contains("KMZ Merger").click()
 
     // Wait longer for page to fully load
     cy.wait(2000)
 
-    // Debug - log all input elements on page
-    cy.get('input[type="file"]').then($elements => {
-      cy.task('log', `Found ${$elements.length} file inputs`)
-    })
-
-    // Use a more general selector
-    cy.get('input[type="file"]').selectFile('cypress/fixtures/test-data/testdata.kmz', {
+    // 2. Upload the test files
+    cy.get('input[type="file"]').selectFile([
+      'cypress/fixtures/test-data/merger_1.kmz',
+      'cypress/fixtures/test-data/merger_2.kmz',
+      'cypress/fixtures/test-data/merger_3.kmz'
+    ], {
       force: true
     })
 
-    cy.wait(1000)
+    cy.wait(1000) // wait for processing & upload to complete
 
-    // 3. Click the "Go!" button (Reverse)
+    // 3. Click the "Go!" button (Merge)
     cy.contains("Go!").click()
 
+    // Wait longer for download
     cy.wait(1000)
-    
-    cy.readFile("cypress/downloads/reversed_testdata.kmz", null)
+
+    cy.task('log', 'Starting file comparison...')
+
+    // Create a proper promise chain for file processing
+    cy.readFile("cypress/downloads/merged.kmz", null)
       .then(outputFileContent => {
         if (!outputFileContent) {
           throw new Error('Downloaded file is empty or does not exist')
         }
         cy.task('log', `Downloaded file size: ${outputFileContent.byteLength} bytes`)
-        
-        return cy.fixture("test-data/reversed_testdata.kmz", null)
+
+        // Read the expected file
+        return cy.fixture("test-data/merged.kmz", null)
           .then(expectedFileContent => {
             if (!expectedFileContent) {
               throw new Error('Expected file is empty or does not exist')
             }
-            
+            cy.task('log', `Expected file size: ${expectedFileContent.byteLength} bytes`)
+
+            // Safe access to JSZip - check it exists before using
             if (typeof JSZip !== 'function' && typeof JSZip.loadAsync !== 'function') {
               throw new Error(`JSZip not properly loaded: ${typeof JSZip}`)
             }
-            
+
+            // Create promises for both zip files
             const zipPromises = [
               JSZip.loadAsync(outputFileContent),
               JSZip.loadAsync(expectedFileContent)
             ]
-            
+
+            // Wait for both zip objects to be loaded
             return Promise.all(zipPromises)
           })
       })
@@ -64,11 +72,11 @@ describe("KMZ Reverse E2E", () => {
           outputZip.file("doc.kml")?.async("string"),
           expectedZip.file("doc.kml")?.async("string")
         ]
-        
+
         if (!kmlPromises[0] || !kmlPromises[1]) {
           throw new Error("doc.kml not found in one of the zip files")
         }
-        
+
         return Promise.all(kmlPromises)
       })
       .then(([outputKml, expectedKml]) => {
