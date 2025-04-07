@@ -29,10 +29,8 @@ export function SortableGlobalItem({ track, removeTrack }: SortableGlobalItemPro
     
     console.log("Delete button clicked for track:", track.name);
     
-    if (confirm(`Are you sure you want to delete track "${track.name}"?`)) {
-      console.log("Confirming delete for track:", track.name);
-      removeTrack(track.id);
-    }
+    removeTrack(track.id);
+    
   };
 
   return (

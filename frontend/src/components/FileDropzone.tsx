@@ -141,6 +141,17 @@ export default function FileDropzone({
     });
   }, [files]);
 
+  useEffect(() => {
+    // If there are no files but we still have tracks, clear the tracks
+    if (files.length === 0 && globalTracks.length > 0) {
+      console.log("Inconsistent state detected: Files empty but tracks exist, clearing tracks");
+      setGlobalTracks([]);
+      setKmzFilesWithTracks([]);
+      if (onGlobalTracksReorder) onGlobalTracksReorder([]);
+      if (onTracksReordered) onTracksReordered([]);
+    }
+  }, [files, globalTracks, onGlobalTracksReorder, onTracksReordered]);
+
   const syncGlobalTracksToFiles = (updatedGlobalTracks: TrackItem[]) => {
     const newFilesWithTracks = structuredClone(kmzFilesWithTracks);
     newFilesWithTracks.forEach((f) => {
@@ -185,32 +196,59 @@ export default function FileDropzone({
 
     if (!trackToRemove) return;
 
+    // Add the track to the deletion set first
     setTrackIdsToDelete((prev) => {
       const updated = new Set(prev);
       updated.add(trackToRemove.uniqueId);
       return updated;
     });
 
+    // Get the file information for the track being deleted
+    const fileIndex = trackToRemove.fileIndex;
+    const fileName = trackToRemove.fileName;
+
+    // Filter out the track from our local state
     const updatedTracks = currentTracks.filter((t) => t.id !== trackId);
     setGlobalTracks(updatedTracks);
 
-    const fileIndex = trackToRemove.fileIndex;
-    const fileName = trackToRemove.fileName;
+    // Determine if this was the last track from the file
     const remainingTracksFromSameFile = updatedTracks.some((t) => t.fileIndex === fileIndex);
-
+    
+    console.log(`Tracks remaining from ${fileName}: ${remainingTracksFromSameFile ? 'Yes' : 'No'}`);
+    
+    // If no tracks remain from this file, remove the file
     if (!remainingTracksFromSameFile) {
-      console.log(`No tracks remain from file: ${fileName}, removing file`);
-      setTimeout(() => {
+      console.log(`No tracks remain from file: ${fileName}, removing file immediately`);
+      
+      // Execute file removal in a separate function to ensure it runs properly
+      const removeEmptyFile = () => {
+        console.log(`Executing file removal for ${fileName}`);
+        
+        // Update kmzFilesWithTracks directly as well
+        setKmzFilesWithTracks(prev => prev.filter(file => file.name !== fileName));
+        
+        // Update files state
         setFiles((prevFiles) => {
           const updatedFiles = prevFiles.filter((file) => file.name !== fileName);
+          console.log(`Files before removal: ${prevFiles.length}, after: ${updatedFiles.length}`);
           return updatedFiles;
         });
+
+        // If this was the last file, forcibly clear all tracks
+        if (files.length <= 1) {
+          console.log("This was the last file, clearing all tracks");
+          setGlobalTracks([]);
+          onGlobalTracksReorder?.([]);
+        }
 
         toast.info(`File "${fileName}" removed`, {
           description: "All tracks were deleted from this file",
           duration: 2000,
         });
-      }, 0);
+      };
+      
+      // Execute the file removal immediately
+      removeEmptyFile();
     } else {
       toast.success(`Track "${trackToRemove.name}" deleted`, {
         description: `Removed from ${trackToRemove.fileName}`,
@@ -218,10 +256,11 @@ export default function FileDropzone({
       });
     }
 
+    // Update parent components with the updated tracks
     if (onGlobalTracksReorder) {
       onGlobalTracksReorder(updatedTracks);
     }
-
+    
     if (onTracksReordered) {
       const updatedFiles = syncGlobalTracksToFiles(updatedTracks);
       onTracksReordered(updatedFiles);
@@ -291,7 +330,7 @@ export default function FileDropzone({
         <p className="mb-4">
           {isDragActive ? "Drop the files here ..." : "Drop or upload your .kmz files"}
         </p>
-        {kmzFilesWithTracks.length > 0 && (
+        {kmzFilesWithTracks.length > 0 && files.length > 0 && (
           <ul className="text-gray-400 mt-4 w-full">
             {kmzFilesWithTracks.map((file, fileIndex) => (
               <li key={fileIndex} className="flex flex-col items-start mb-4">
@@ -329,7 +368,7 @@ export default function FileDropzone({
           </ul>
         )}
       </div>
-      {globalSortEnabled && globalTracks.length > 0 && (
+      {globalSortEnabled && globalTracks.length > 0 && files.length > 0 && (
         <div className="mt-4">
           <h3 className="font-medium text-white mb-2">
             Track Order (drag to reorder, click trash to delete)
