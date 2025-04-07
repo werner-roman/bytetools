@@ -16,23 +16,28 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Install Nixpacks
-      run: |
-        curl -sSL https://nixpacks.com/install.sh | bash
-
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+      
+    - name: Install dependencies
+      working-directory: backend
+      run: npm ci
+      
     - name: Test Backend Startup
       working-directory: backend
       run: |
         # Create a timeout to kill the server after 30 seconds (assuming successful start)
-        timeout 30s nixpacks run --cmd "npm start" . || EXIT_CODE=$?
+        timeout 30s npm start || EXIT_CODE=$?
         
         # Exit code 124 from timeout means the command was terminated after running the specified time
         # which means our server started and kept running (good outcome)
         if [ $EXIT_CODE -eq 124 ]; then
-          echo "Server started successfully and ran for 30 seconds without crashing"
+          echo "Server stayed up for 30 seconds"
           exit 0
         else
-          echo "Server failed to start or crashed during startup"
+          echo "Server failed or crashed"
           exit 1
         fi
       env:
