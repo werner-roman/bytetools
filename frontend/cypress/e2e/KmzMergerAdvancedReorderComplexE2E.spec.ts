@@ -47,24 +47,24 @@ describe("KMZ Merger Advanced Complex Reorder E2E", () => {
     cy.window().then(win => {
       // First get the track IDs
       const tracks = Cypress.$('[data-testid^="track-item-"]');
-      const trackIds = [];
+      const trackIds: { id: string; text: string | null }[] = [];
       
       tracks.each((i, el) => {
-        const trackId = el.getAttribute('data-testid').replace('track-item-', '');
+        const trackId = el.getAttribute('data-testid')?.replace('track-item-', '') || '';
         const trackText = el.textContent;
         trackIds.push({ id: trackId, text: trackText });
         cy.task('log', `Track ${i}: ${trackText}, ID: ${trackId}`);
       });
       
       // Find the Ortstock and Schafberg tracks
-      const track1269 = trackIds.find(t => t.text.includes("1269 - Ortstock"));
-      const track5706 = trackIds.find(t => t.text.includes("5706 - Schafbärg"));
+      const track1269 = trackIds.find(t => t.text?.includes("1269 - Ortstock"));
+      const track5706 = trackIds.find(t => t.text?.includes("5706 - Schafbärg"));
       
       if (track1269 && track5706) {
         cy.task('log', `Found tracks to swap: ${track1269.id} and ${track5706.id}`);
         
         // Use the exposed helper function to swap them
-        win.byteToolsTestHelpers.manuallySwapTracks(track1269.id, track5706.id);
+        (win as any).byteToolsTestHelpers.manuallySwapTracks(track1269.id, track5706.id);
         cy.task('log', 'Tracks swapped using the helper function');
       } else {
         cy.task('log', 'Could not find both tracks to swap');
