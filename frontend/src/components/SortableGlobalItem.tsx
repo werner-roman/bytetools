@@ -40,6 +40,8 @@ export function SortableGlobalItem({ track, removeTrack }: SortableGlobalItemPro
       ref={setNodeRef}
       style={style}
       className="flex items-center justify-between bg-asphalt-950 text-gray-200 p-2 mb-2 rounded"
+      // Add title attribute to show uniqueId on hover for debugging
+      title={track.uniqueId || `${track.fileName}:${track.name}`}
     >
       {/* Drag handle area */}
       <div

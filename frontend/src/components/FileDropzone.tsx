@@ -28,6 +28,7 @@ export interface TrackItem {
   coordinates: string;
   fileIndex: number;
   fileName: string;
+  uniqueId: string;
 }
 
 interface FileDropzoneProps {
@@ -98,13 +99,16 @@ export default function FileDropzone({
           filesWithTracks.forEach((f, fIndex) => {
             f.tracks?.forEach((t: { name: string; coordinates: string }, tIndex: number) => {
               const trackId = `${fIndex}-${tIndex}`;
-              if (!trackIdsToDelete.has(trackId)) {
+              const uniqueId = `${f.name}:${tIndex}:${t.name}`;
+
+              if (!trackIdsToDelete.has(uniqueId)) {
                 allTracks.push({
                   id: trackId,
                   name: t.name,
                   coordinates: t.coordinates,
                   fileIndex: fIndex,
                   fileName: f.name,
+                  uniqueId: uniqueId,
                 });
               }
             });
@@ -126,11 +130,11 @@ export default function FileDropzone({
   useEffect(() => {
     setTrackIdsToDelete((prev) => {
       const updated = new Set(prev);
-      const existingFileIndices = new Set(files.map((_, idx) => idx));
-      for (const trackId of updated) {
-        const [fileIndex] = trackId.split("-").map(Number);
-        if (!existingFileIndices.has(fileIndex)) {
-          updated.delete(trackId);
+      const currentFileNames = new Set(files.map((file) => file.name));
+      for (const uniqueId of updated) {
+        const [fileName] = uniqueId.split(":");
+        if (!currentFileNames.has(fileName)) {
+          updated.delete(uniqueId);
         }
       }
       return updated;
@@ -183,7 +187,7 @@ export default function FileDropzone({
 
     setTrackIdsToDelete((prev) => {
       const updated = new Set(prev);
-      updated.add(trackId);
+      updated.add(trackToRemove.uniqueId);
       return updated;
     });
 
