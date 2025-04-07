@@ -49,6 +49,7 @@ export default function FileDropzone({
 }: FileDropzoneProps) {
   const [kmzFilesWithTracks, setKmzFilesWithTracks] = useState<KMZFileWithTracks[]>([]);
   const [globalTracks, setGlobalTracks] = useState<TrackItem[]>([]);
+  const [trackIdsToDelete, setTrackIdsToDelete] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const extractTracks = async () => {
@@ -96,13 +97,16 @@ export default function FileDropzone({
           let allTracks: TrackItem[] = [];
           filesWithTracks.forEach((f, fIndex) => {
             f.tracks?.forEach((t: { name: string; coordinates: string }, tIndex: number) => {
-              allTracks.push({
-                id: `${fIndex}-${tIndex}`,
-                name: t.name,
-                coordinates: t.coordinates,
-                fileIndex: fIndex,
-                fileName: f.name,
-              });
+              const trackId = `${fIndex}-${tIndex}`;
+              if (!trackIdsToDelete.has(trackId)) {
+                allTracks.push({
+                  id: trackId,
+                  name: t.name,
+                  coordinates: t.coordinates,
+                  fileIndex: fIndex,
+                  fileName: f.name,
+                });
+              }
             });
           });
           setGlobalTracks(allTracks);
@@ -117,7 +121,21 @@ export default function FileDropzone({
       }
     };
     extractTracks();
-  }, [files, globalSortEnabled]);
+  }, [files, globalSortEnabled, trackIdsToDelete]);
+
+  useEffect(() => {
+    setTrackIdsToDelete((prev) => {
+      const updated = new Set(prev);
+      const existingFileIndices = new Set(files.map((_, idx) => idx));
+      for (const trackId of updated) {
+        const [fileIndex] = trackId.split("-").map(Number);
+        if (!existingFileIndices.has(fileIndex)) {
+          updated.delete(trackId);
+        }
+      }
+      return updated;
+    });
+  }, [files]);
 
   const syncGlobalTracksToFiles = (updatedGlobalTracks: TrackItem[]) => {
     const newFilesWithTracks = structuredClone(kmzFilesWithTracks);
@@ -157,50 +175,50 @@ export default function FileDropzone({
 
   const removeGlobalTrack = (trackId: string) => {
     console.log("removeGlobalTrack called with ID:", trackId);
-    
-    // Find track before updating state 
+
     const currentTracks = [...globalTracks];
-    const trackToRemove = currentTracks.find(t => t.id === trackId);
-    const updatedTracks = currentTracks.filter(t => t.id !== trackId);
-    
-    // Update our component state
+    const trackToRemove = currentTracks.find((t) => t.id === trackId);
+
+    if (!trackToRemove) return;
+
+    setTrackIdsToDelete((prev) => {
+      const updated = new Set(prev);
+      updated.add(trackId);
+      return updated;
+    });
+
+    const updatedTracks = currentTracks.filter((t) => t.id !== trackId);
     setGlobalTracks(updatedTracks);
-    
-    // Show success notification
-    if (trackToRemove) {
-      // Check if this was the last track from this file
-      const fileIndex = trackToRemove.fileIndex;
-      const fileName = trackToRemove.fileName;
-      const remainingTracksFromSameFile = updatedTracks.some(t => t.fileIndex === fileIndex);
-      
-      // If no tracks remain from this file, we should remove the file too
-      if (!remainingTracksFromSameFile) {
-        console.log(`No tracks remain from file: ${fileName}, removing file`);
-        // Use setTimeout to avoid state updates during render
-        setTimeout(() => {
-          setFiles(prevFiles => prevFiles.filter(file => file.name !== fileName));
-          toast.info(`File "${fileName}" removed`, {
-            description: "All tracks were deleted from this file",
-            duration: 2000,
-          });
-        }, 0);
-      } else {
-        // Normal track deletion notification
-        toast.success(`Track "${trackToRemove.name}" deleted`, {
-          description: `Removed from ${trackToRemove.fileName}`,
+
+    const fileIndex = trackToRemove.fileIndex;
+    const fileName = trackToRemove.fileName;
+    const remainingTracksFromSameFile = updatedTracks.some((t) => t.fileIndex === fileIndex);
+
+    if (!remainingTracksFromSameFile) {
+      console.log(`No tracks remain from file: ${fileName}, removing file`);
+      setTimeout(() => {
+        setFiles((prevFiles) => {
+          const updatedFiles = prevFiles.filter((file) => file.name !== fileName);
+          return updatedFiles;
+        });
+
+        toast.info(`File "${fileName}" removed`, {
+          description: "All tracks were deleted from this file",
           duration: 2000,
         });
-      }
+      }, 0);
+    } else {
+      toast.success(`Track "${trackToRemove.name}" deleted`, {
+        description: `Removed from ${trackToRemove.fileName}`,
+        duration: 2000,
+      });
     }
-    
-    // Update parent components
+
     if (onGlobalTracksReorder) {
-      console.log("Calling onGlobalTracksReorder");
       onGlobalTracksReorder(updatedTracks);
     }
-    
+
     if (onTracksReordered) {
-      console.log("Calling onTracksReordered");
       const updatedFiles = syncGlobalTracksToFiles(updatedTracks);
       onTracksReordered(updatedFiles);
     }
