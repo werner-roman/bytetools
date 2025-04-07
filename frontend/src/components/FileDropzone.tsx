@@ -166,8 +166,34 @@ export default function FileDropzone({
     // Update our component state
     setGlobalTracks(updatedTracks);
     
-    // Update parent components directly without setTimeout
-    // which might be causing issues
+    // Show success notification
+    if (trackToRemove) {
+      // Check if this was the last track from this file
+      const fileIndex = trackToRemove.fileIndex;
+      const fileName = trackToRemove.fileName;
+      const remainingTracksFromSameFile = updatedTracks.some(t => t.fileIndex === fileIndex);
+      
+      // If no tracks remain from this file, we should remove the file too
+      if (!remainingTracksFromSameFile) {
+        console.log(`No tracks remain from file: ${fileName}, removing file`);
+        // Use setTimeout to avoid state updates during render
+        setTimeout(() => {
+          setFiles(prevFiles => prevFiles.filter(file => file.name !== fileName));
+          toast.info(`File "${fileName}" removed`, {
+            description: "All tracks were deleted from this file",
+            duration: 2000,
+          });
+        }, 0);
+      } else {
+        // Normal track deletion notification
+        toast.success(`Track "${trackToRemove.name}" deleted`, {
+          description: `Removed from ${trackToRemove.fileName}`,
+          duration: 2000,
+        });
+      }
+    }
+    
+    // Update parent components
     if (onGlobalTracksReorder) {
       console.log("Calling onGlobalTracksReorder");
       onGlobalTracksReorder(updatedTracks);
@@ -177,14 +203,6 @@ export default function FileDropzone({
       console.log("Calling onTracksReordered");
       const updatedFiles = syncGlobalTracksToFiles(updatedTracks);
       onTracksReordered(updatedFiles);
-    }
-    
-    // Show success notification
-    if (trackToRemove) {
-      toast.success(`Track "${trackToRemove.name}" deleted`, {
-        description: `Removed from ${trackToRemove.fileName}`,
-        duration: 2000,
-      });
     }
   };
 
