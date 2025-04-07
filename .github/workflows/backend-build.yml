@@ -7,39 +7,40 @@ on:
       - 'feat/workflow_build_backend'
   pull_request:
     branches: [ main ]
-
+    
 jobs:
   test-start:
     runs-on: ubuntu-latest
-
+    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install Nixpacks
+      run: |
+        curl -sSL https://nixpacks.com/install.sh | bash
 
-      - name: Install Nixpacks
-        run: |
-          curl -sSL https://nixpacks.com/install.sh | bash
-
-      - name: Test Backend Startup
-        working-directory: backend
-        run: |
-          # Try to run the server for 30 seconds
-          echo "Starting backend with nixpacks and allowing it to run for 30 seconds..."
-          timeout 30s nixpacks run --cmd "npm start" . || EXIT_CODE=$?
-
-          if [ "$EXIT_CODE" = "124" ]; then
-            echo "✅ Server started and kept running for 30s"
-            exit 0
-          else
-            echo "❌ Server failed to start or crashed"
-            exit 1
-          fi
-        env:
-          PORT: ${{ secrets.PORT }}
-          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
-          STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
-          STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
-          STRAVA_REDIRECT_URI: ${{ secrets.STRAVA_REDIRECT_URI }}
-          CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
-          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
-          SVIX_API_URL: ${{ secrets.SVIX_API_URL }}
+    - name: Test Backend Startup
+      working-directory: backend
+      run: |
+        # Create a timeout to kill the server after 30 seconds (assuming successful start)
+        timeout 30s nixpacks run --cmd "npm start" . || EXIT_CODE=$?
+        
+        # Exit code 124 from timeout means the command was terminated after running the specified time
+        # which means our server started and kept running (good outcome)
+        if [ $EXIT_CODE -eq 124 ]; then
+          echo "Server started successfully and ran for 30 seconds without crashing"
+          exit 0
+        else
+          echo "Server failed to start or crashed during startup"
+          exit 1
+        fi
+      env:
+        PORT: ${{ secrets.PORT }}
+        FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+        STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+        STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+        STRAVA_REDIRECT_URI: ${{ secrets.STRAVA_REDIRECT_URI }}
+        CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
+        CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+        SVIX_API_URL: ${{ secrets.SVIX_API_URL }}
