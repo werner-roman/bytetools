@@ -1,6 +1,7 @@
 # Bytetools - Simple & Open-Source
 
 Welcome to Bytetools, a collection of simple, open-source tools designed to work fast and without ads. This project was created out of a desire to have a set of tools that are efficient, easy to use, and free from the clutter of advertisements.
+[![Cypress E2E Tests](https://github.com/werner-roman/bytetools/actions/workflows/cypress-tests.yml/badge.svg)](https://github.com/werner-roman/bytetools/actions/workflows/cypress-tests.yml)
 
 ## Website
 

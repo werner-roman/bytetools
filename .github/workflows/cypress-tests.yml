@@ -1,0 +1,109 @@
+name: Cypress E2E Tests
+
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  cypress-run:
+    name: Cypress E2E Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      # Create fixtures directory and required test files
+      - name: Create Cypress fixtures directory
+        run: |
+          mkdir -p frontend/cypress/fixtures/test-data
+          mkdir -p frontend/cypress/downloads
+
+      # Install frontend dependencies
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      # Create frontend .env file with GitHub secrets
+      - name: Create frontend .env file
+        working-directory: ./frontend
+        run: |
+          cat > .env.local << EOF
+          VITE_BACKEND_URL=${{ secrets.VITE_BACKEND_URL }}
+          VITE_STRAVA_CLIENT_ID=${{ secrets.VITE_STRAVA_CLIENT_ID }}
+          VITE_STRAVA_REDIRECT_URI=${{ secrets.VITE_STRAVA_REDIRECT_URI }}
+          VITE_CLERK_PUBLISHABLE_KEY=${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
+          EOF
+
+      # Install backend dependencies
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      # Create backend .env file with GitHub secrets
+      - name: Create backend .env file
+        working-directory: ./backend
+        run: |
+          cat > .env.local << EOF
+          PORT=${{ secrets.BACKEND_PORT }}
+          FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+          STRAVA_CLIENT_ID=${{ secrets.STRAVA_CLIENT_ID }}
+          STRAVA_CLIENT_SECRET=${{ secrets.STRAVA_CLIENT_SECRET }}
+          STRAVA_REDIRECT_URI=${{ secrets.STRAVA_REDIRECT_URI }}
+          CLERK_PUBLISHABLE_KEY=${{ secrets.CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}
+          SVIX_API_URL=${{ secrets.SVIX_API_URL }}
+          EOF
+
+      # Start both frontend and backend servers
+      - name: Start backend server
+        working-directory: ./backend
+        run: npm start &
+        env:
+          NODE_ENV: test
+
+      - name: Start frontend server
+        working-directory: ./frontend
+        run: npm run dev &
+        env:
+          NODE_ENV: test
+
+      # Wait for servers to be up
+      - name: Wait for servers to be ready
+        run: |
+          echo "Waiting for frontend to be ready..."
+          timeout 60 bash -c 'until curl -s http://localhost:5173 > /dev/null; do sleep 1; done'
+          echo "Frontend is up!"
+
+      # Run Cypress tests
+      - name: Run Cypress tests
+        working-directory: ./frontend
+        run: npm run test:e2e
+        env:
+          CYPRESS_baseUrl: http://localhost:5173
+
+      # Upload test artifacts if tests fail
+      - name: Upload screenshots on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-screenshots
+          path: frontend/cypress/screenshots
+          if-no-files-found: ignore
+
+      - name: Upload videos
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cypress-videos
+          path: frontend/cypress/videos
+          if-no-files-found: ignore

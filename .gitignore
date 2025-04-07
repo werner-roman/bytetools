@@ -27,4 +27,4 @@ dist-ssr
 *.sw?
 TODO.md
 
-frontend/cypress/downloads/
+frontend/cypress/downloads/*
