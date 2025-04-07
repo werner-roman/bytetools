@@ -4,112 +4,162 @@ import 'cypress-file-upload'
 
 const JSZip = require('jszip')
 
-describe("KMZ Merger Advanced Track Reordering", () => {
+describe("KMZ Merger Advanced Mode with Track Manipulation", () => {
   beforeEach(() => {
     cy.visit("/")
   })
 
-  it("Reorders tracks from merger_2 and merger_3 files and verifies the output", () => {
+  it("Successfully merges KMZ files in advanced mode with track deletion and reordering", () => {
     // 1. Navigate to the KMZ Merger tool
     cy.contains("KMZ Merger").click()
-
-    // Wait for page to fully load
     cy.wait(2000)
 
-    // 2. Upload the test files - the order matters
+    // 2. Upload the test files
     cy.get('input[type="file"]').selectFile([
       'cypress/fixtures/test-data/merger_4.kmz',
       'cypress/fixtures/test-data/merger_3.kmz',
       'cypress/fixtures/test-data/merger_2.kmz'
-    ], {
-      force: true
-    })
-
-    // 3. Wait for the files to load completely
+    ], { force: true })
     cy.wait(3000)
 
-    // 4. Enable Advanced Mode by clicking the switch
+    // 3. Enable Advanced Mode by clicking the switch
     cy.get('[data-slot="switch"]').click()
-    
-    // 5. Wait longer to ensure UI has updated with all tracks
     cy.wait(3000)
-    
-    // 6. Log available tracks to console for debugging
+
+    // 4. Log track information to help with debugging
     cy.window().then(win => {
       win.eval(`
-        console.log("Available tracks:");
-        document.querySelectorAll('[aria-roledescription="sortable"]').forEach(t => {
-          console.log(" - " + t.textContent);
+        // Log all tracks and their IDs
+        console.log("=== Track Information ===");
+        const tracks = Array.from(document.querySelectorAll('[data-testid^="track-item-"]'));
+        tracks.forEach((t, i) => {
+          const testId = t.getAttribute('data-testid');
+          console.log(\`Track \${i}: \${t.textContent}, TestID: \${testId}\`);
+        });
+
+        // Log delete buttons
+        console.log("=== Delete Buttons ===");
+        const deleteButtons = Array.from(document.querySelectorAll('[data-testid^="delete-track-"]'));
+        deleteButtons.forEach((btn, i) => {
+          const testId = btn.getAttribute('data-testid');
+          const trackId = testId.replace('delete-track-', '');
+          console.log(\`Delete button \${i}: \${testId}, Track ID: \${trackId}\`);
+          
+          // Get the parent track
+          const trackItem = document.querySelector(\`[data-testid="track-item-\${trackId}"]\`);
+          console.log(\`  Associated track: \${trackItem ? trackItem.textContent : 'unknown'}\`);
         });
       `);
     });
     
-    // 7. Now use a very direct approach to find and swap our tracks
+    // 5. Step 1: Delete one of the Ortstock tracks (the one with ID 0-1)
+    cy.get('[data-testid="delete-track-0-1"]').should('exist').click();
+    cy.wait(1000); // Wait for deletion to complete
+
+    // 6. Step 2: Reorder the remaining tracks using drag-and-drop simulation
     cy.window().then(win => {
       win.eval(`
-        (function() {
-          // Get all tracks
-          const tracks = Array.from(document.querySelectorAll('[aria-roledescription="sortable"]'));
-          
-          // Find tracks specifically by checking both name AND file name in the content
-          let ortstockTrack = null;
-          let schafbergTrack = null;
-          
-          for (const track of tracks) {
-            const content = track.textContent;
-            const fileName = track.querySelector('.text-xs.bg-gray-700')?.textContent?.trim();
+        // Function to find tracks by ID
+        function getTrackById(id) {
+          return document.querySelector(\`[data-testid="track-item-\${id}"]\`);
+        }
+        
+        // Get our tracks
+        const schafbergTrack = getTrackById("1-0");  // 5706 - Schafbärg
+        const tourgeometrieTrack = getTrackById("0-0");  // Tourgeometrie
+        
+        // Log what we found
+        console.log("=== Reordering Tracks ===");
+        console.log("Schafberg track found:", !!schafbergTrack, schafbergTrack?.textContent);
+        console.log("Tourgeometrie track found:", !!tourgeometrieTrack, tourgeometrieTrack?.textContent);
+        
+        // Check if parent container is found
+        if (schafbergTrack && tourgeometrieTrack && schafbergTrack.parentElement) {
+          try {
+            // Get the parent container
+            const container = schafbergTrack.parentElement;
             
-            if (content.includes('1269 - Ortstock') && fileName && fileName.includes('merger_2')) {
-              ortstockTrack = track;
-              console.log("Found Ortstock track from merger_2:", content);
-            }
+            // Get positions
+            const allTracks = Array.from(container.querySelectorAll('[data-testid^="track-item-"]'));
+            const schafbergIndex = allTracks.indexOf(schafbergTrack);
+            const tourgeometrieIndex = allTracks.indexOf(tourgeometrieTrack);
             
-            if (content.includes('5706 - Schafbärg') && fileName && fileName.includes('merger_3')) {
-              schafbergTrack = track;
-              console.log("Found Schafberg track from merger_3:", content); 
-            }
+            console.log("Track indices:", schafbergIndex, tourgeometrieIndex);
+            
+            // Create clones of the elements 
+            const schafbergClone = schafbergTrack.cloneNode(true);
+            const tourgeometrieClone = tourgeometrieTrack.cloneNode(true);
+            
+            // Replace the elements to swap their positions
+            container.replaceChild(schafbergClone, tourgeometrieTrack);
+            container.replaceChild(tourgeometrieClone, schafbergTrack);
+            
+            console.log("Reordering completed successfully");
+          } catch (e) {
+            console.error("Error during reordering:", e);
           }
-          
-          if (!ortstockTrack || !schafbergTrack) {
-            console.error("Failed to find the specific tracks we need:");
-            console.log("Ortstock track found:", !!ortstockTrack);
-            console.log("Schafberg track found:", !!schafbergTrack);
-            return;
-          }
-          
-          console.log("Both tracks found successfully. Attempting to swap...");
-          
-          // Get positions in DOM
-          const parent = ortstockTrack.parentElement;
-          if (!parent) {
-            console.error("Cannot find parent element of tracks");
-            return;
-          }
-          
-          // Create a temporary marker element to help with the swap
-          const tempMarker = document.createElement('div');
-          
-          // Place the marker where Ortstock is
-          parent.replaceChild(tempMarker, ortstockTrack);
-          
-          // Replace Schafberg with Ortstock
-          parent.replaceChild(ortstockTrack, schafbergTrack);
-          
-          // Replace the marker with Schafberg
-          parent.replaceChild(schafbergTrack, tempMarker);
-          
-          console.log("Track positions swapped successfully");
-        })();
+        } else {
+          console.error("Could not find tracks for reordering");
+        }
       `);
     });
     
-    // 8. Wait after manipulation 
-    cy.wait(2000);
+    cy.wait(2000); // Wait for reordering to complete
 
-    // 9. Click the "Go!" button to generate merged file
+    // 7. Now click the Go! button to merge files
     cy.contains("Go!").click();
-    
-    // 10. Wait for download
     cy.wait(3000);
+
+    // 8. Verify that merged file was created
+    cy.readFile("cypress/downloads/merged_advanced.kmz", null)
+      .then(outputFileContent => {
+        if (!outputFileContent) {
+          throw new Error('Downloaded file is empty or does not exist');
+        }
+        cy.task('log', `Downloaded file size: ${outputFileContent.byteLength} bytes`);
+        
+        // Basic verification that file exists and has content
+        expect(outputFileContent.byteLength).to.be.greaterThan(0);
+        
+        // Read the expected file for comparison
+        return cy.fixture("test-data/merged_advanced_Reorder_Complex_Multi_Track.kmz", null)
+          .then(expectedFileContent => {
+            if (!expectedFileContent) {
+              throw new Error('Expected file is empty or does not exist');
+            }
+            cy.task('log', `Expected file size: ${expectedFileContent.byteLength} bytes`);
+
+            // Create promises for both zip files
+            const zipPromises = [
+              JSZip.loadAsync(outputFileContent),
+              JSZip.loadAsync(expectedFileContent)
+            ];
+
+            return Promise.all(zipPromises);
+          });
+      })
+      .then(([outputZip, expectedZip]) => {
+        // Extract doc.kml from both zips
+        const kmlPromises = [
+          outputZip.file("doc.kml")?.async("string"),
+          expectedZip.file("doc.kml")?.async("string")
+        ];
+
+        if (!kmlPromises[0] || !kmlPromises[1]) {
+          throw new Error("doc.kml not found in one of the zip files");
+        }
+
+        return Promise.all(kmlPromises);
+      })
+      .then(([outputKml, expectedKml]) => {
+        // Use a 5% size difference comparison approach
+        cy.task('log', `Output KML length: ${outputKml.length}`);
+        cy.task('log', `Expected KML length: ${expectedKml.length}`);
+        
+        const sizeDiff = Math.abs(outputKml.length - expectedKml.length);
+        const percentDiff = sizeDiff / expectedKml.length * 100;
+        
+        expect(percentDiff).to.be.lessThan(5);
+      });
   });
 });

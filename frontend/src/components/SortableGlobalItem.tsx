@@ -40,17 +40,22 @@ export function SortableGlobalItem({ track, removeTrack }: SortableGlobalItemPro
       className="flex items-center justify-between bg-asphalt-950 text-gray-200 p-2 mb-2 rounded"
       // Add title attribute to show uniqueId on hover for debugging
       title={track.uniqueId || `${track.fileName}:${track.name}`}
+      data-testid={`track-item-${track.id}`}
     >
       {/* Drag handle area */}
       <div
         {...attributes}
         {...listeners}
         className="flex-grow cursor-grab"
+        data-testid={`track-content-${track.id}`}
       >
         {track.name}
       </div>
       <div className="flex items-center space-x-2">
-        <span className="text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded">
+        <span 
+          className="text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded"
+          data-testid={`track-filename-${track.id}`}
+        >
           {track.fileName}
         </span>
         {/* Completely separated delete button with no DnD listeners */}
@@ -61,6 +66,8 @@ export function SortableGlobalItem({ track, removeTrack }: SortableGlobalItemPro
           className={`p-2 text-red-500 hover:text-red-700 hover:bg-gray-800 rounded transition-colors duration-200 cursor-pointer ${
             isDeleteHovered ? 'scale-110' : ''
           }`}
+          data-testid={`delete-track-${track.id}`}
+          aria-label={`Delete track ${track.name}`}
         >
           <Trash2 size={16} />
         </div>
