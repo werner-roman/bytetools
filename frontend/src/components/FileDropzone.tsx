@@ -40,6 +40,115 @@ interface FileDropzoneProps {
   onGlobalTracksReorder?: (tracks: TrackItem[]) => void;
 }
 
+const extractTracksRecursively = (obj: any, tracks: any[] = []): { name: string; coordinates: string }[] => {
+  if (!obj || typeof obj !== 'object') return tracks;
+
+  // Tracks found at this level
+  let foundTracksAtThisLevel: { name: string; coordinates: string; priority: number; source: string }[] = [];
+
+  // Priority 1: Direct LineString in a named Placemark - most likely the main track
+  if (obj.LineString && typeof obj.LineString === 'object' && typeof obj.LineString.coordinates === 'string') {
+    const name = obj.name || "Unnamed Track";
+    foundTracksAtThisLevel.push({
+      name,
+      coordinates: obj.LineString.coordinates.trim(),
+      priority: obj.name ? 1 : 3, // Higher priority for named tracks
+      source: "direct"
+    });
+  }
+
+  // Priority 2: LineString in MultiGeometry within a Placemark
+  if (obj.MultiGeometry && typeof obj.MultiGeometry === 'object') {
+    if (obj.MultiGeometry.LineString && typeof obj.MultiGeometry.LineString.coordinates === 'string') {
+      const name = obj.name || "MultiGeometry Track";
+      foundTracksAtThisLevel.push({
+        name,
+        coordinates: obj.MultiGeometry.LineString.coordinates.trim(),
+        priority: obj.name ? 2 : 4, // Higher priority for named tracks
+        source: "multigeometry"
+      });
+    }
+  }
+
+  // Continue recursively searching other branches 
+  for (const key in obj) {
+    if (typeof obj[key] === 'object') {
+      if (Array.isArray(obj[key])) {
+        obj[key].forEach((item: any) => {
+          extractTracksRecursively(item, tracks);
+        });
+      } else {
+        // Don't recurse into already processed MultiGeometry to avoid duplicates
+        if (key !== 'MultiGeometry' && key !== 'LineString') {
+          extractTracksRecursively(obj[key], tracks);
+        }
+      }
+    }
+  }
+
+  // Only add tracks from this level if they're not duplicates of existing tracks
+  for (const track of foundTracksAtThisLevel) {
+    // Check for duplicates by comparing coordinates or first/last points
+    const isDuplicate = tracks.some(existingTrack => {
+      // For exact match comparison
+      if (existingTrack.coordinates === track.coordinates) {
+        return true;
+      }
+      
+      // For "similar enough" comparison (compare first and last coords)
+      const existingCoords = existingTrack.coordinates.split(/\s+/);
+      const newCoords = track.coordinates.split(/\s+/);
+      
+      if (existingCoords.length > 0 && newCoords.length > 0 &&
+          existingCoords[0] === newCoords[0] && 
+          existingCoords[existingCoords.length-1] === newCoords[newCoords.length-1]) {
+        console.log(`Found duplicate track with same start/end points: ${track.name}`);
+        return true;
+      }
+      
+      return false;
+    });
+
+    if (!isDuplicate) {
+      tracks.push({
+        name: track.name,
+        coordinates: track.coordinates
+      });
+      console.log(`Added track: ${track.name} (source: ${track.source}, priority: ${track.priority})`);
+    } else {
+      console.log(`Skipped duplicate track: ${track.name} (source: ${track.source})`);
+    }
+  }
+
+  return tracks;
+};
+
+const extractWaypointsRecursively = (obj: any, waypoints: any[] = []): { name: string; coordinates: string }[] => {
+  if (!obj || typeof obj !== 'object') return waypoints;
+
+  if (obj.Point && typeof obj.Point === 'object' && typeof obj.Point.coordinates === 'string') {
+    const name = obj.name || "Unnamed Waypoint";
+    waypoints.push({
+      name,
+      coordinates: obj.Point.coordinates.trim()
+    });
+  }
+
+  for (const key in obj) {
+    if (typeof obj[key] === 'object') {
+      if (Array.isArray(obj[key])) {
+        obj[key].forEach((item: any) => {
+          extractWaypointsRecursively(item, waypoints);
+        });
+      } else {
+        extractWaypointsRecursively(obj[key], waypoints);
+      }
+    }
+  }
+
+  return waypoints;
+};
+
 export default function FileDropzone({
   files,
   setFiles,
@@ -67,26 +176,18 @@ export default function FileDropzone({
               const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@_", parseAttributeValue: true });
               const parsedKml = parser.parse(kmlContent);
 
-              const placemarks = parsedKml?.kml?.Document?.Placemark
-                ? Array.isArray(parsedKml.kml.Document.Placemark)
-                  ? parsedKml.kml.Document.Placemark
-                  : [parsedKml.kml.Document.Placemark]
-                : [];
+              const extractedTracks = extractTracksRecursively(parsedKml);
+              console.log(`File ${file.name} has ${extractedTracks.length} unique tracks:`);
+              extractedTracks.forEach((track, i) => {
+                console.log(`  ${i+1}. ${track.name} (${track.coordinates.substring(0, 20)}...)`);
+              });
 
-              const tracks = placemarks.filter((p: any) => p?.LineString?.coordinates)
-                .map((p: any) => ({
-                  name: p?.name || "Unnamed Track",
-                  coordinates: p.LineString.coordinates.trim(),
-                }));
+              const waypoints = extractWaypointsRecursively(parsedKml);
+              console.log(`Found ${waypoints.length} waypoints recursively in ${file.name}`);
 
-              const waypoints = placemarks.filter((p: any) => p?.Point?.coordinates)
-                .map((p: any) => ({
-                  name: p?.name || "Unnamed Waypoint",
-                  coordinates: p.Point.coordinates.trim(),
-                }));
-
-              return { ...file, name: file.name, tracks, waypoints };
-            } catch {
+              return { ...file, name: file.name, tracks: extractedTracks, waypoints };
+            } catch (error) {
+              console.error(`Error processing file ${file.name}:`, error);
               return { ...file, name: file.name, tracks: [], waypoints: [] };
             }
           })
@@ -142,7 +243,6 @@ export default function FileDropzone({
   }, [files]);
 
   useEffect(() => {
-    // If there are no files but we still have tracks, clear the tracks
     if (files.length === 0 && globalTracks.length > 0) {
       console.log("Inconsistent state detected: Files empty but tracks exist, clearing tracks");
       setGlobalTracks([]);
@@ -213,11 +313,9 @@ export default function FileDropzone({
         return true;
       };
       
-      // Expose globalTracks for inspection
       window.byteToolsTestHelpers.getGlobalTracks = () => globalTracks;
     }
     
-    // Return cleanup function
     return () => {
       if (typeof window !== 'undefined' && window.byteToolsTestHelpers) {
         delete window.byteToolsTestHelpers.manuallySwapTracks;
@@ -234,45 +332,36 @@ export default function FileDropzone({
 
     if (!trackToRemove) return;
 
-    // Add the track to the deletion set first
     setTrackIdsToDelete((prev) => {
       const updated = new Set(prev);
       updated.add(trackToRemove.uniqueId);
       return updated;
     });
 
-    // Get the file information for the track being deleted
     const fileIndex = trackToRemove.fileIndex;
     const fileName = trackToRemove.fileName;
 
-    // Filter out the track from our local state
     const updatedTracks = currentTracks.filter((t) => t.id !== trackId);
     setGlobalTracks(updatedTracks);
 
-    // Determine if this was the last track from the file
     const remainingTracksFromSameFile = updatedTracks.some((t) => t.fileIndex === fileIndex);
     
     console.log(`Tracks remaining from ${fileName}: ${remainingTracksFromSameFile ? 'Yes' : 'No'}`);
     
-    // If no tracks remain from this file, remove the file
     if (!remainingTracksFromSameFile) {
       console.log(`No tracks remain from file: ${fileName}, removing file immediately`);
       
-      // Execute file removal in a separate function to ensure it runs properly
       const removeEmptyFile = () => {
         console.log(`Executing file removal for ${fileName}`);
         
-        // Update kmzFilesWithTracks directly as well
         setKmzFilesWithTracks(prev => prev.filter(file => file.name !== fileName));
         
-        // Update files state
         setFiles((prevFiles) => {
           const updatedFiles = prevFiles.filter((file) => file.name !== fileName);
           console.log(`Files before removal: ${prevFiles.length}, after: ${updatedFiles.length}`);
           return updatedFiles;
         });
 
-        // If this was the last file, forcibly clear all tracks
         if (files.length <= 1) {
           console.log("This was the last file, clearing all tracks");
           setGlobalTracks([]);
@@ -285,7 +374,6 @@ export default function FileDropzone({
         });
       };
       
-      // Execute the file removal immediately
       removeEmptyFile();
     } else {
       toast.success(`Track "${trackToRemove.name}" deleted`, {
@@ -294,7 +382,6 @@ export default function FileDropzone({
       });
     }
 
-    // Update parent components with the updated tracks
     if (onGlobalTracksReorder) {
       onGlobalTracksReorder(updatedTracks);
     }
@@ -431,7 +518,6 @@ export default function FileDropzone({
   );
 }
 
-// Add TypeScript interface for window object
 declare global {
   interface Window {
     byteToolsTestHelpers?: {
