@@ -22,7 +22,16 @@ describe("KMZ Reverse E2E", () => {
     })
 
     // Use a more general selector
-    cy.get('input[type="file"]').selectFile('cypress/fixtures/test-data/testdata.kmz', {
+    cy.get('input[type="file"]').selectFile([
+      'cypress/fixtures/test-data/reverse_1.kmz',
+      'cypress/fixtures/test-data/reverse_2.kmz',
+      'cypress/fixtures/test-data/reverse_3.kmz',
+      'cypress/fixtures/test-data/reverse_4.kmz',
+      'cypress/fixtures/test-data/reverse_5.kmz',
+      'cypress/fixtures/test-data/reverse_6.kmz',
+      'cypress/fixtures/test-data/reverse_7.kmz',
+      'cypress/fixtures/test-data/reverse_8.kmz',
+    ], {
       force: true
     })
 
@@ -33,14 +42,14 @@ describe("KMZ Reverse E2E", () => {
 
     cy.wait(1000)
     
-    cy.readFile("cypress/downloads/reversed_testdata.kmz", null)
+    cy.readFile("cypress/downloads/reversed_reverse_8.kmz", null)
       .then(outputFileContent => {
         if (!outputFileContent) {
           throw new Error('Downloaded file is empty or does not exist')
         }
         cy.task('log', `Downloaded file size: ${outputFileContent.byteLength} bytes`)
         
-        return cy.fixture("test-data/reversed_testdata.kmz", null)
+        return cy.fixture("test-data/reversed_reverse_8.kmz", null)
           .then(expectedFileContent => {
             if (!expectedFileContent) {
               throw new Error('Expected file is empty or does not exist')
