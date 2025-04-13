@@ -7,9 +7,6 @@ on:
   pull_request:
     branches: [ main ]
 
-env:
-  VITE_CLERK_PUBLISHABLE_KEY: pk_test_aGVhbHRoeS1zZWFzbmFpbC01Ny5jbGVyay5hY2NvdW50cy5kZXYk
-
 jobs:
   cypress-run:
     name: Cypress E2E Tests
