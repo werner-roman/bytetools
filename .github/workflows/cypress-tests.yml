@@ -33,9 +33,6 @@ jobs:
         working-directory: ./frontend
         run: npm ci
       
-      - env:
-        VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
-      
       # Create frontend .env file with GitHub secrets
       - name: Create frontend .env file
         working-directory: ./frontend
@@ -46,6 +43,8 @@ jobs:
           VITE_STRAVA_REDIRECT_URI=${{ secrets.VITE_STRAVA_REDIRECT_URI }}
           VITE_CLERK_PUBLISHABLE_KEY=${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
           EOF
+          - env:
+              VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
 
       # Install backend dependencies
       - name: Install backend dependencies
