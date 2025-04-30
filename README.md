@@ -27,7 +27,7 @@ To get started with the project locally, follow these steps:
 ### Prerequisites
 
 - [Clerk](https://clerk.com) account
-- [Strava](https://strava.com) acconut
+- [Strava](https://strava.com) account
 
 1. Clone the repository:
 
