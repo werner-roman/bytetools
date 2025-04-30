@@ -12,8 +12,6 @@ import {
 } from "react-router"; // React Router v7 uses the same imports
 import { ClerkProvider, useUser, SignInButton } from "@clerk/clerk-react";
 
-const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-
 const toolDisplayNames: Record<string, string> = {
   "kmz-reverse": "KMZ Reverse",
   "kmz-merger": "KMZ Merger",
@@ -147,7 +145,7 @@ const router = createBrowserRouter([
 
 function AppWrapper() {
   return (
-    <ClerkProvider publishableKey={clerkPubKey}>
+    <ClerkProvider publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}>
       <RouterProvider router={router} />
     </ClerkProvider>
   );
