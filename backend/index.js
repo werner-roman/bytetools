@@ -74,7 +74,7 @@ app.post('/set-default-credits', async (req, res) => {
     // Check if the user already has credits in privateMetadata
     if (!user.privateMetadata.credits) {
       await clerkClient.users.updateUserMetadata(userId, {
-        privateMetadata: { credits: 5 }, // Set default credits to 5
+        privateMetadata: { credits: 500 }, // Set default credits to 5
       });
     }
 
